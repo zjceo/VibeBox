@@ -40,6 +40,10 @@ class MediaService {
         }
       }
 
+      // Eliminar duplicados basándose en la ruta del archivo
+      allMedia.audio = this.removeDuplicates(allMedia.audio);
+      allMedia.video = this.removeDuplicates(allMedia.video);
+
       return allMedia;
     } catch (error) {
       console.error('Error scanning media files:', error);
@@ -47,9 +51,20 @@ class MediaService {
     }
   }
 
+  removeDuplicates(mediaArray) {
+    const seen = new Map();
+    return mediaArray.filter(item => {
+      if (seen.has(item.path)) {
+        return false;
+      }
+      seen.set(item.path, true);
+      return true;
+    });
+  }
+
   async scanDirectory(directoryPath, depth = 0, maxDepth = 3) {
     const media = { audio: [], video: [] };
-    
+
     if (depth > maxDepth) return media;
 
     try {
@@ -65,7 +80,7 @@ class MediaService {
           }
         } else if (item.isFile()) {
           const extension = item.name.substring(item.name.lastIndexOf('.')).toLowerCase();
-          
+
           if (this.audioExtensions.includes(extension)) {
             media.audio.push({
               id: item.path,
