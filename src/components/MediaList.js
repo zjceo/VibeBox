@@ -8,7 +8,7 @@ import {
   Image,
 } from 'react-native';
 
-const MediaList = ({ items, onItemPress, type = 'audio' }) => {
+const MediaList = ({ items, onItemPress, type = 'audio', refreshControl }) => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.itemContainer}
@@ -65,6 +65,7 @@ const MediaList = ({ items, onItemPress, type = 'audio' }) => {
       contentContainerStyle={items.length === 0 ? styles.emptyList : styles.list}
       ListEmptyComponent={renderEmpty}
       showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
     />
   );
 };

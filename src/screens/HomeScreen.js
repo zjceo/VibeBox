@@ -9,7 +9,9 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { MediaList, LoadingScreen, CustomTabBar } from '../components';
+import MediaList from '../components/MediaList';
+import LoadingScreen from '../components/LoadingScreen';
+import CustomTabBar from '../components/CustomTabBar';
 import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
 

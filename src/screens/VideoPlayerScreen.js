@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Video from 'react-native-video';
-import { PlayerControls } from '../components';
+import PlayerControls from '../components/PlayerControls';
 
 const { width, height } = Dimensions.get('window');
 

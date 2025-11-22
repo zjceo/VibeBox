@@ -1,0 +1,412 @@
+diff --git a/node_modules/@react-native-community/slider/android/build.gradle b/node_modules/@react-native-community/slider/android/build.gradle
+index 362ad4a..3b76e3a 100644
+--- a/node_modules/@react-native-community/slider/android/build.gradle
++++ b/node_modules/@react-native-community/slider/android/build.gradle
+@@ -7,7 +7,6 @@ buildscript {
+ 
+   dependencies {
+     classpath("com.android.tools.build:gradle:7.1.1")
+-    classpath("com.facebook.react:react-native-gradle-plugin")
+     classpath("de.undercouch:gradle-download-task:5.0.1")
+   }
+ }
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/01da703f2a97a65941f11083651ff8a3/results.bin b/node_modules/@react-native-community/slider/android/build/.transforms/01da703f2a97a65941f11083651ff8a3/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/@react-native-community/slider/android/build/.transforms/01da703f2a97a65941f11083651ff8a3/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/01da703f2a97a65941f11083651ff8a3/transformed/classes/classes_dex/classes.dex b/node_modules/@react-native-community/slider/android/build/.transforms/01da703f2a97a65941f11083651ff8a3/transformed/classes/classes_dex/classes.dex
+new file mode 100644
+index 0000000..8df08cc
+Binary files /dev/null and b/node_modules/@react-native-community/slider/android/build/.transforms/01da703f2a97a65941f11083651ff8a3/transformed/classes/classes_dex/classes.dex differ
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/1b08c8e56ca01d94866432dded8db7bf/results.bin b/node_modules/@react-native-community/slider/android/build/.transforms/1b08c8e56ca01d94866432dded8db7bf/results.bin
+new file mode 100644
+index 0000000..7ed749e
+--- /dev/null
++++ b/node_modules/@react-native-community/slider/android/build/.transforms/1b08c8e56ca01d94866432dded8db7bf/results.bin
+@@ -0,0 +1 @@
++o/bundleLibRuntimeToDirDebug
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/1b08c8e56ca01d94866432dded8db7bf/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin b/node_modules/@react-native-community/slider/android/build/.transforms/1b08c8e56ca01d94866432dded8db7bf/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin
+new file mode 100644
+index 0000000..c21717e
+Binary files /dev/null and b/node_modules/@react-native-community/slider/android/build/.transforms/1b08c8e56ca01d94866432dded8db7bf/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin differ
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/26aea1568856ac64ce7ec4fefc3725a2/results.bin b/node_modules/@react-native-community/slider/android/build/.transforms/26aea1568856ac64ce7ec4fefc3725a2/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/@react-native-community/slider/android/build/.transforms/26aea1568856ac64ce7ec4fefc3725a2/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/26aea1568856ac64ce7ec4fefc3725a2/transformed/classes/classes_dex/classes.dex b/node_modules/@react-native-community/slider/android/build/.transforms/26aea1568856ac64ce7ec4fefc3725a2/transformed/classes/classes_dex/classes.dex
+new file mode 100644
+index 0000000..5183900
+Binary files /dev/null and b/node_modules/@react-native-community/slider/android/build/.transforms/26aea1568856ac64ce7ec4fefc3725a2/transformed/classes/classes_dex/classes.dex differ
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/2aac70761e36f450463d2356df591452/results.bin b/node_modules/@react-native-community/slider/android/build/.transforms/2aac70761e36f450463d2356df591452/results.bin
+new file mode 100644
+index 0000000..7ed749e
+--- /dev/null
++++ b/node_modules/@react-native-community/slider/android/build/.transforms/2aac70761e36f450463d2356df591452/results.bin
+@@ -0,0 +1 @@
++o/bundleLibRuntimeToDirDebug
+diff --git a/node_modules/@react-native-community/slider/android/build/.transforms/2aac70761e36f450463d2356df591452/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin b/node_modules/@react-native-community/slider/android/build/.transforms/2aac70761e36f450463d2356df591452/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin
+new file mode 100644
+index 0000000..c21717e
+Binary files /dev/null and b/node_modules/@react-native-community/slider/android/build/.transforms/2aac70761e36f450463d2356df591452/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin differ
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/java/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.java b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/java/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.java
+index 9ef913d..2481b31 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/java/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.java
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/java/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.java
+@@ -18,6 +18,7 @@ import com.facebook.react.uimanager.BaseViewManager;
+ import com.facebook.react.uimanager.BaseViewManagerDelegate;
+ import com.facebook.react.uimanager.LayoutShadowNode;
+ 
++@SuppressWarnings("deprecation")
+ public class RNCSliderManagerDelegate<T extends View, U extends BaseViewManager<T, ? extends LayoutShadowNode> & RNCSliderManagerInterface<T>> extends BaseViewManagerDelegate<T, U> {
+   public RNCSliderManagerDelegate(U viewManager) {
+     super(viewManager);
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/CMakeLists.txt b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/CMakeLists.txt
+index ad0f39d..3fa7c94 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/CMakeLists.txt
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/CMakeLists.txt
+@@ -25,12 +25,4 @@ target_link_libraries(
+   reactnative
+ )
+ 
+-target_compile_options(
+-  react_codegen_RNCSlider
+-  PRIVATE
+-  -DLOG_TAG=\"ReactNative\"
+-  -fexceptions
+-  -frtti
+-  -std=c++20
+-  -Wall
+-)
++target_compile_reactnative_options(react_codegen_RNCSlider PRIVATE)
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/EventEmitters.cpp b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/EventEmitters.cpp
+index 90a90b7..0611ed0 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/EventEmitters.cpp
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/EventEmitters.cpp
+@@ -13,42 +13,42 @@
+ 
+ namespace facebook::react {
+ 
+-void RNCSliderEventEmitter::onChange(OnChange $event) const {
+-  dispatchEvent("change", [$event=std::move($event)](jsi::Runtime &runtime) {
+-    auto $payload = jsi::Object(runtime);
+-    $payload.setProperty(runtime, "value", $event.value);
+-$payload.setProperty(runtime, "fromUser", $event.fromUser);
+-    return $payload;
++void RNCSliderEventEmitter::onChange(OnChange event) const {
++  dispatchEvent("change", [event=std::move(event)](jsi::Runtime &runtime) {
++    auto payload = jsi::Object(runtime);
++    payload.setProperty(runtime, "value", event.value);
++payload.setProperty(runtime, "fromUser", event.fromUser);
++    return payload;
+   });
+ }
+ 
+ 
+-void RNCSliderEventEmitter::onRNCSliderSlidingStart(OnRNCSliderSlidingStart $event) const {
+-  dispatchEvent("rNCSliderSlidingStart", [$event=std::move($event)](jsi::Runtime &runtime) {
+-    auto $payload = jsi::Object(runtime);
+-    $payload.setProperty(runtime, "value", $event.value);
+-$payload.setProperty(runtime, "fromUser", $event.fromUser);
+-    return $payload;
++void RNCSliderEventEmitter::onRNCSliderSlidingStart(OnRNCSliderSlidingStart event) const {
++  dispatchEvent("rNCSliderSlidingStart", [event=std::move(event)](jsi::Runtime &runtime) {
++    auto payload = jsi::Object(runtime);
++    payload.setProperty(runtime, "value", event.value);
++payload.setProperty(runtime, "fromUser", event.fromUser);
++    return payload;
+   });
+ }
+ 
+ 
+-void RNCSliderEventEmitter::onRNCSliderSlidingComplete(OnRNCSliderSlidingComplete $event) const {
+-  dispatchEvent("rNCSliderSlidingComplete", [$event=std::move($event)](jsi::Runtime &runtime) {
+-    auto $payload = jsi::Object(runtime);
+-    $payload.setProperty(runtime, "value", $event.value);
+-$payload.setProperty(runtime, "fromUser", $event.fromUser);
+-    return $payload;
++void RNCSliderEventEmitter::onRNCSliderSlidingComplete(OnRNCSliderSlidingComplete event) const {
++  dispatchEvent("rNCSliderSlidingComplete", [event=std::move(event)](jsi::Runtime &runtime) {
++    auto payload = jsi::Object(runtime);
++    payload.setProperty(runtime, "value", event.value);
++payload.setProperty(runtime, "fromUser", event.fromUser);
++    return payload;
+   });
+ }
+ 
+ 
+-void RNCSliderEventEmitter::onRNCSliderValueChange(OnRNCSliderValueChange $event) const {
+-  dispatchEvent("rNCSliderValueChange", [$event=std::move($event)](jsi::Runtime &runtime) {
+-    auto $payload = jsi::Object(runtime);
+-    $payload.setProperty(runtime, "value", $event.value);
+-$payload.setProperty(runtime, "fromUser", $event.fromUser);
+-    return $payload;
++void RNCSliderEventEmitter::onRNCSliderValueChange(OnRNCSliderValueChange event) const {
++  dispatchEvent("rNCSliderValueChange", [event=std::move(event)](jsi::Runtime &runtime) {
++    auto payload = jsi::Object(runtime);
++    payload.setProperty(runtime, "value", event.value);
++payload.setProperty(runtime, "fromUser", event.fromUser);
++    return payload;
+   });
+ }
+ 
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.cpp b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.cpp
+index e01293f..42b80b4 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.cpp
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.cpp
+@@ -39,7 +39,105 @@ RNCSliderProps::RNCSliderProps(
+     trackImage(convertRawProp(context, rawProps, "trackImage", sourceProps.trackImage, {})),
+     value(convertRawProp(context, rawProps, "value", sourceProps.value, {0.0})),
+     lowerLimit(convertRawProp(context, rawProps, "lowerLimit", sourceProps.lowerLimit, {0.0})),
+-    upperLimit(convertRawProp(context, rawProps, "upperLimit", sourceProps.upperLimit, {0.0}))
+-      {}
++    upperLimit(convertRawProp(context, rawProps, "upperLimit", sourceProps.upperLimit, {0.0})) {}
++    
++#ifdef RN_SERIALIZABLE_STATE
++ComponentName RNCSliderProps::getDiffPropsImplementationTarget() const {
++  return "RNCSlider";
++}
++
++folly::dynamic RNCSliderProps::getDiffProps(
++    const Props* prevProps) const {
++  static const auto defaultProps = RNCSliderProps();
++  const RNCSliderProps* oldProps = prevProps == nullptr
++      ? &defaultProps
++      : static_cast<const RNCSliderProps*>(prevProps);
++  if (this == oldProps) {
++    return folly::dynamic::object();
++  }
++  folly::dynamic result = HostPlatformViewProps::getDiffProps(prevProps);
++  
++  if (accessibilityUnits != oldProps->accessibilityUnits) {
++    result["accessibilityUnits"] = accessibilityUnits;
++  }
++    
++  if (accessibilityIncrements != oldProps->accessibilityIncrements) {
++    result["accessibilityIncrements"] = toDynamic(accessibilityIncrements);
++  }
++    
++  if (disabled != oldProps->disabled) {
++    result["disabled"] = disabled;
++  }
++    
++  if (inverted != oldProps->inverted) {
++    result["inverted"] = inverted;
++  }
++    
++  if (vertical != oldProps->vertical) {
++    result["vertical"] = vertical;
++  }
++    
++  if (tapToSeek != oldProps->tapToSeek) {
++    result["tapToSeek"] = tapToSeek;
++  }
++    
++  if (maximumTrackImage != oldProps->maximumTrackImage) {
++    result["maximumTrackImage"] = toDynamic(maximumTrackImage);
++  }
++    
++  if (maximumTrackTintColor != oldProps->maximumTrackTintColor) {
++    result["maximumTrackTintColor"] = *maximumTrackTintColor;
++  }
++    
++  if ((maximumValue != oldProps->maximumValue) && !(std::isnan(maximumValue) && std::isnan(oldProps->maximumValue))) {
++    result["maximumValue"] = maximumValue;
++  }
++    
++  if (minimumTrackImage != oldProps->minimumTrackImage) {
++    result["minimumTrackImage"] = toDynamic(minimumTrackImage);
++  }
++    
++  if (minimumTrackTintColor != oldProps->minimumTrackTintColor) {
++    result["minimumTrackTintColor"] = *minimumTrackTintColor;
++  }
++    
++  if ((minimumValue != oldProps->minimumValue) && !(std::isnan(minimumValue) && std::isnan(oldProps->minimumValue))) {
++    result["minimumValue"] = minimumValue;
++  }
++    
++  if ((step != oldProps->step) && !(std::isnan(step) && std::isnan(oldProps->step))) {
++    result["step"] = step;
++  }
++    
++  if (testID != oldProps->testID) {
++    result["testID"] = testID;
++  }
++    
++  if (thumbImage != oldProps->thumbImage) {
++    result["thumbImage"] = toDynamic(thumbImage);
++  }
++    
++  if (thumbTintColor != oldProps->thumbTintColor) {
++    result["thumbTintColor"] = *thumbTintColor;
++  }
++    
++  if (trackImage != oldProps->trackImage) {
++    result["trackImage"] = toDynamic(trackImage);
++  }
++    
++  if ((value != oldProps->value) && !(std::isnan(value) && std::isnan(oldProps->value))) {
++    result["value"] = value;
++  }
++    
++  if ((lowerLimit != oldProps->lowerLimit) && !(std::isnan(lowerLimit) && std::isnan(oldProps->lowerLimit))) {
++    result["lowerLimit"] = lowerLimit;
++  }
++    
++  if ((upperLimit != oldProps->upperLimit) && !(std::isnan(upperLimit) && std::isnan(oldProps->upperLimit))) {
++    result["upperLimit"] = upperLimit;
++  }
++  return result;
++}
++#endif
+ 
+ } // namespace facebook::react
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.h b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.h
+index 779e49b..c113b61 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.h
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/Props.h
+@@ -11,6 +11,7 @@
+ 
+ #include <react/renderer/components/view/ViewProps.h>
+ #include <react/renderer/core/PropsParserContext.h>
++#include <react/renderer/debug/DebugStringConvertible.h>
+ #include <react/renderer/graphics/Color.h>
+ #include <react/renderer/imagemanager/primitives.h>
+ #include <vector>
+@@ -44,6 +45,14 @@ class RNCSliderProps final : public ViewProps {
+   Float value{0.0};
+   Float lowerLimit{0.0};
+   Float upperLimit{0.0};
++
++  #ifdef RN_SERIALIZABLE_STATE
++  ComponentName getDiffPropsImplementationTarget() const override;
++
++  folly::dynamic getDiffProps(const Props* prevProps) const override;
++  #endif
++
++  
+ };
+ 
+ } // namespace facebook::react
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/States.h b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/States.h
+index c011ed8..2e55bce 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/States.h
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/jni/react/renderer/components/RNCSlider/States.h
+@@ -8,7 +8,8 @@
+  */
+ #pragma once
+ 
+-#ifdef ANDROID
++#include <react/renderer/core/StateData.h>
++#ifdef RN_SERIALIZABLE_STATE
+ #include <folly/dynamic.h>
+ #endif
+ 
+diff --git a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/schema.json b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/schema.json
+index abea469..70fdd91 100644
+--- a/node_modules/@react-native-community/slider/android/build/generated/source/codegen/schema.json
++++ b/node_modules/@react-native-community/slider/android/build/generated/source/codegen/schema.json
+@@ -1 +1 @@
+-{"modules":{"RNCSlider":{"type":"Component","components":{"RNCSlider":{"interfaceOnly":true,"extendsProps":[{"type":"ReactNativeBuiltInType","knownTypeName":"ReactNativeCoreViewProps"}],"events":[{"name":"onChange","optional":true,"bubblingType":"bubble","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}},{"name":"onRNCSliderSlidingStart","optional":true,"bubblingType":"direct","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}},{"name":"onRNCSliderSlidingComplete","optional":true,"bubblingType":"direct","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}},{"name":"onRNCSliderValueChange","optional":true,"bubblingType":"bubble","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}}],"props":[{"name":"accessibilityUnits","optional":true,"typeAnnotation":{"type":"StringTypeAnnotation","default":null}},{"name":"accessibilityIncrements","optional":true,"typeAnnotation":{"type":"ArrayTypeAnnotation","elementType":{"type":"StringTypeAnnotation"}}},{"name":"disabled","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"inverted","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"vertical","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"tapToSeek","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"maximumTrackImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"maximumTrackTintColor","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ColorPrimitive"}},{"name":"maximumValue","optional":true,"typeAnnotation":{"type":"DoubleTypeAnnotation","default":0}},{"name":"minimumTrackImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"minimumTrackTintColor","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ColorPrimitive"}},{"name":"minimumValue","optional":true,"typeAnnotation":{"type":"DoubleTypeAnnotation","default":0}},{"name":"step","optional":true,"typeAnnotation":{"type":"DoubleTypeAnnotation","default":0}},{"name":"testID","optional":true,"typeAnnotation":{"type":"StringTypeAnnotation","default":null}},{"name":"thumbImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"thumbTintColor","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ColorPrimitive"}},{"name":"trackImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"value","optional":true,"typeAnnotation":{"type":"FloatTypeAnnotation","default":0}},{"name":"lowerLimit","optional":true,"typeAnnotation":{"type":"FloatTypeAnnotation","default":0}},{"name":"upperLimit","optional":true,"typeAnnotation":{"type":"FloatTypeAnnotation","default":0}}],"commands":[]}}}}}
+\ No newline at end of file
++{"libraryName":"","modules":{"RNCSlider":{"type":"Component","components":{"RNCSlider":{"interfaceOnly":true,"extendsProps":[{"type":"ReactNativeBuiltInType","knownTypeName":"ReactNativeCoreViewProps"}],"events":[{"name":"onChange","optional":true,"bubblingType":"bubble","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}},{"name":"onRNCSliderSlidingStart","optional":true,"bubblingType":"direct","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}},{"name":"onRNCSliderSlidingComplete","optional":true,"bubblingType":"direct","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}},{"name":"onRNCSliderValueChange","optional":true,"bubblingType":"bubble","typeAnnotation":{"type":"EventTypeAnnotation","argument":{"type":"ObjectTypeAnnotation","properties":[{"name":"value","optional":false,"typeAnnotation":{"type":"FloatTypeAnnotation"}},{"name":"fromUser","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation"}}]}}}],"props":[{"name":"accessibilityUnits","optional":true,"typeAnnotation":{"type":"StringTypeAnnotation","default":null}},{"name":"accessibilityIncrements","optional":true,"typeAnnotation":{"type":"ArrayTypeAnnotation","elementType":{"type":"StringTypeAnnotation"}}},{"name":"disabled","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"inverted","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"vertical","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"tapToSeek","optional":true,"typeAnnotation":{"type":"BooleanTypeAnnotation","default":false}},{"name":"maximumTrackImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"maximumTrackTintColor","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ColorPrimitive"}},{"name":"maximumValue","optional":true,"typeAnnotation":{"type":"DoubleTypeAnnotation","default":0}},{"name":"minimumTrackImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"minimumTrackTintColor","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ColorPrimitive"}},{"name":"minimumValue","optional":true,"typeAnnotation":{"type":"DoubleTypeAnnotation","default":0}},{"name":"step","optional":true,"typeAnnotation":{"type":"DoubleTypeAnnotation","default":0}},{"name":"testID","optional":true,"typeAnnotation":{"type":"StringTypeAnnotation","default":null}},{"name":"thumbImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"thumbTintColor","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ColorPrimitive"}},{"name":"trackImage","optional":true,"typeAnnotation":{"type":"ReservedPropTypeAnnotation","name":"ImageSourcePrimitive"}},{"name":"value","optional":true,"typeAnnotation":{"type":"FloatTypeAnnotation","default":0}},{"name":"lowerLimit","optional":true,"typeAnnotation":{"type":"FloatTypeAnnotation","default":0}},{"name":"upperLimit","optional":true,"typeAnnotation":{"type":"FloatTypeAnnotation","default":0}}],"commands":[]}}}}}
+\ No newline at end of file
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar b/node_modules/@react-native-community/slider/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar
+index 5ad646c..9bb8290 100644
+Binary files a/node_modules/@react-native-community/slider/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar and b/node_modules/@react-native-community/slider/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar differ
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+index 21e5ff6..4560d90 100644
+--- a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
++++ b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+@@ -1 +1 @@
+-#Fri Oct 31 11:04:52 CET 2025
++#Sun Nov 09 22:44:23 PET 2025
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+index 9dc4c7e..8d64a31 100644
+--- a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
++++ b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+@@ -1,2 +1,2 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/build/generated/res/resValues/debug"/></dataSet><mergedItems/></merger>
+\ No newline at end of file
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\debug\res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\debug\res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\build\generated\res\resValues\debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\build\generated\res\resValues\debug"/></dataSet><mergedItems/></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugAssets/merger.xml b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugAssets/merger.xml
+new file mode 100644
+index 0000000..66c0973
+--- /dev/null
++++ b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugAssets/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\assets"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\debug\assets"/></dataSet><dataSet config="generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\build\intermediates\shader_assets\debug\compileDebugShaders\out"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+index 27a0819..59cf9cf 100644
+--- a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
++++ b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+@@ -1,2 +1,2 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/debug/jniLibs"/></dataSet></merger>
+\ No newline at end of file
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\debug\jniLibs"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+index d2e73e4..e79c1e8 100644
+--- a/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
++++ b/node_modules/@react-native-community/slider/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+@@ -1,2 +1,2 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/debug/shaders"/></dataSet></merger>
+\ No newline at end of file
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\debug\shaders"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class b/node_modules/@react-native-community/slider/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class
+index f7ff204..777283b 100644
+Binary files a/node_modules/@react-native-community/slider/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class and b/node_modules/@react-native-community/slider/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class differ
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class b/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class
+index f7ff204..777283b 100644
+Binary files a/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class and b/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/facebook/react/viewmanagers/RNCSliderManagerDelegate.class differ
+diff --git a/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar b/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar
+index edb770d..a0f7765 100644
+Binary files a/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar and b/node_modules/@react-native-community/slider/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar differ
+diff --git a/node_modules/@react-native-community/slider/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/@react-native-community/slider/android/build/outputs/logs/manifest-merger-debug-report.txt
+index 3d89e27..74df140 100644
+--- a/node_modules/@react-native-community/slider/android/build/outputs/logs/manifest-merger-debug-report.txt
++++ b/node_modules/@react-native-community/slider/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -1,17 +1,17 @@
+ -- Merging decision tree log ---
+ manifest
+-ADDED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml:1:1-3:12
+-INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml:1:1-3:12
++ADDED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml:1:1-3:12
++INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml:1:1-3:12
+ 	package
+-		ADDED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml:2:11-52
+-		INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml
++		ADDED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml:2:11-52
++		INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml
+ 	xmlns:android
+-		ADDED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml:1:11-69
++		ADDED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml:1:11-69
+ uses-sdk
+-INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+-INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml
+-INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml
++INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml
++INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml
+ 	android:targetSdkVersion
+-		INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml
++		INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml
+ 	android:minSdkVersion
+-		INJECTED from /Users/bartoszklonowski/Desktop/Projects/react-native-slider/example/node_modules/@react-native-community/slider/android/src/main/AndroidManifest.xml
++		INJECTED from E:\rn-cli\VibeBox\node_modules\@react-native-community\slider\android\src\main\AndroidManifest.xml
+diff --git a/node_modules/@react-native-community/slider/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/@react-native-community/slider/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
+index 80a2e25..30140db 100644
+Binary files a/node_modules/@react-native-community/slider/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin and b/node_modules/@react-native-community/slider/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ

@@ -1,6 +1,32 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
-plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+    includeBuild("../node_modules/@react-native/gradle-plugin")
+    
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'com.facebook.react') {
+                useModule("com.facebook.react:react-native-gradle-plugin:${requested.version}")
+            }
+            if (requested.id.id == 'com.facebook.react.settings') {
+                useModule("com.facebook.react:react-native-gradle-plugin:${requested.version}")
+            }
+            if (requested.id.id == 'com.facebook.react.rootproject') {
+                useModule("com.facebook.react:react-native-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+}
+plugins {
+    id("com.facebook.react.settings")
+}
+
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand()
+}
+
 rootProject.name = 'VibeBox'
 include ':app'
-includeBuild('../node_modules/@react-native/gradle-plugin')

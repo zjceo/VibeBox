@@ -6,39 +6,8 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 
 class AudioPlayerService {
-  isInitialized = false;
-
-  async initialize() {
-    if (this.isInitialized) return;
-
-    try {
-      await TrackPlayer.setupPlayer();
-      await TrackPlayer.updateOptions({
-        capabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.SkipToNext,
-          Capability.SkipToPrevious,
-          Capability.SeekTo,
-        ],
-        compactCapabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.SkipToNext,
-        ],
-        notificationCapabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.SkipToNext,
-          Capability.SkipToPrevious,
-        ],
-      });
-
-      this.isInitialized = true;
-    } catch (error) {
-      console.error('Error initializing audio player:', error);
-    }
-  }
+  // ELIMINAMOS initialize() porque ya se hace en App.js
+  // NO inicializamos el player aquí para evitar duplicación
 
   async addTrack(track) {
     try {
@@ -46,8 +15,9 @@ class AudioPlayerService {
         id: track.id,
         url: track.uri,
         title: track.name,
-        artist: 'Desconocido',
-        duration: 0,
+        artist: track.artist || 'Desconocido',
+        artwork: track.artwork,
+        duration: track.duration || 0,
       });
     } catch (error) {
       console.error('Error adding track:', error);
@@ -60,8 +30,9 @@ class AudioPlayerService {
         id: track.id,
         url: track.uri,
         title: track.name,
-        artist: 'Desconocido',
-        duration: 0,
+        artist: track.artist || 'Desconocido',
+        artwork: track.artwork,
+        duration: track.duration || 0,
       }));
       await TrackPlayer.add(formattedTracks);
     } catch (error) {
@@ -128,7 +99,11 @@ class AudioPlayerService {
 
   async getCurrentTrack() {
     try {
-      return await TrackPlayer.getCurrentTrack();
+      const trackIndex = await TrackPlayer.getActiveTrackIndex();
+      if (trackIndex == null) return null;
+      
+      const track = await TrackPlayer.getTrack(trackIndex);
+      return track;
     } catch (error) {
       console.error('Error getting current track:', error);
       return null;
@@ -140,7 +115,7 @@ class AudioPlayerService {
       return await TrackPlayer.getProgress();
     } catch (error) {
       console.error('Error getting progress:', error);
-      return { position: 0, duration: 0 };
+      return { position: 0, duration: 0, buffered: 0 };
     }
   }
 
@@ -149,6 +124,23 @@ class AudioPlayerService {
       await TrackPlayer.reset();
     } catch (error) {
       console.error('Error resetting:', error);
+    }
+  }
+
+  async getQueue() {
+    try {
+      return await TrackPlayer.getQueue();
+    } catch (error) {
+      console.error('Error getting queue:', error);
+      return [];
+    }
+  }
+
+  async removeUpcomingTracks() {
+    try {
+      await TrackPlayer.removeUpcomingTracks();
+    } catch (error) {
+      console.error('Error removing upcoming tracks:', error);
     }
   }
 }

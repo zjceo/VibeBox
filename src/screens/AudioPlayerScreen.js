@@ -8,7 +8,8 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { PlayerControls, LoadingScreen } from '../components';
+import PlayerControls from '../components/PlayerControls';
+import LoadingScreen from '../components/LoadingScreen';
 import AudioPlayerService from '../services/AudioPlayerService';
 import TrackPlayer, { Event, State, useTrackPlayerEvents } from 'react-native-track-player';
 
