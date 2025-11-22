@@ -1,8 +1,8 @@
 import TrackPlayer, { Event } from 'react-native-track-player';
 
-module.exports = async function() {
+module.exports = async function () {
   // Este servicio se ejecuta en segundo plano
-  
+
   TrackPlayer.addEventListener(Event.RemotePlay, () => {
     TrackPlayer.play();
   });
