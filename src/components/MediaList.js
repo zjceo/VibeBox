@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Animated,
 } from 'react-native';
 
 const MediaList = ({ items, onItemPress, type = 'audio', refreshControl }) => {
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item, index }) => (
     <TouchableOpacity
       style={styles.itemContainer}
       onPress={() => onItemPress(item)}
@@ -82,47 +83,55 @@ const styles = StyleSheet.create({
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e1e1e',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#2a2a2a',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#252525',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(29, 185, 84, 0.2)',
   },
   icon: {
-    fontSize: 24,
+    fontSize: 26,
   },
   infoContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#888888',
+    fontSize: 13,
+    color: '#9a9a9a',
+    fontWeight: '500',
   },
   arrowContainer: {
     paddingLeft: 12,
   },
   arrow: {
-    fontSize: 16,
-    color: '#888888',
+    fontSize: 18,
+    color: '#1DB954',
+    opacity: 0.7,
   },
   emptyContainer: {
     flex: 1,
@@ -131,15 +140,17 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 80,
+    marginBottom: 24,
+    opacity: 0.5,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: -0.5,
   },
   emptySubtext: {
     fontSize: 14,
