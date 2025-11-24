@@ -1,0 +1,150 @@
+import TrackPlayer, {
+    Capability,
+    Event,
+    RepeatMode,
+    State,
+    Track,
+} from 'react-native-track-player';
+import { MediaFile } from './MediaService';
+
+class AudioPlayerService {
+    // ELIMINAMOS initialize() porque ya se hace en App.js
+    // NO inicializamos el player aquí para evitar duplicación
+
+    async addTrack(track: MediaFile) {
+        try {
+            await TrackPlayer.add({
+                id: track.id,
+                url: track.uri,
+                title: track.name,
+                artist: track.artist || 'Desconocido',
+                artwork: track.artwork,
+                duration: track.duration || 0,
+            });
+        } catch (error) {
+            console.error('Error adding track:', error);
+        }
+    }
+
+    async addTracks(tracks: MediaFile[]) {
+        try {
+            const formattedTracks = tracks.map(track => ({
+                id: track.id,
+                url: track.uri,
+                title: track.name,
+                artist: track.artist || 'Desconocido',
+                artwork: track.artwork,
+                duration: track.duration || 0,
+            }));
+            await TrackPlayer.add(formattedTracks);
+        } catch (error) {
+            console.error('Error adding tracks:', error);
+        }
+    }
+
+    async play() {
+        try {
+            await TrackPlayer.play();
+        } catch (error) {
+            console.error('Error playing:', error);
+        }
+    }
+
+    async pause() {
+        try {
+            await TrackPlayer.pause();
+        } catch (error) {
+            console.error('Error pausing:', error);
+        }
+    }
+
+    async skipToNext() {
+        try {
+            await TrackPlayer.skipToNext();
+        } catch (error) {
+            console.error('Error skipping to next:', error);
+        }
+    }
+
+    async skipToPrevious() {
+        try {
+            await TrackPlayer.skipToPrevious();
+        } catch (error) {
+            console.error('Error skipping to previous:', error);
+        }
+    }
+
+    async seekTo(position: number) {
+        try {
+            await TrackPlayer.seekTo(position);
+        } catch (error) {
+            console.error('Error seeking:', error);
+        }
+    }
+
+    async setRepeatMode(mode: RepeatMode) {
+        try {
+            await TrackPlayer.setRepeatMode(mode);
+        } catch (error) {
+            console.error('Error setting repeat mode:', error);
+        }
+    }
+
+    async getState(): Promise<State> {
+        try {
+            return await TrackPlayer.getState();
+        } catch (error) {
+            console.error('Error getting state:', error);
+            return State.None;
+        }
+    }
+
+    async getCurrentTrack(): Promise<Track | null> {
+        try {
+            const trackIndex = await TrackPlayer.getActiveTrackIndex();
+            if (trackIndex == null) return null;
+
+            const track = await TrackPlayer.getTrack(trackIndex);
+            return track || null;
+        } catch (error) {
+            console.error('Error getting current track:', error);
+            return null;
+        }
+    }
+
+    async getProgress() {
+        try {
+            return await TrackPlayer.getProgress();
+        } catch (error) {
+            console.error('Error getting progress:', error);
+            return { position: 0, duration: 0, buffered: 0 };
+        }
+    }
+
+    async reset() {
+        try {
+            await TrackPlayer.reset();
+        } catch (error) {
+            console.error('Error resetting:', error);
+        }
+    }
+
+    async getQueue(): Promise<Track[]> {
+        try {
+            return await TrackPlayer.getQueue();
+        } catch (error) {
+            console.error('Error getting queue:', error);
+            return [];
+        }
+    }
+
+    async removeUpcomingTracks() {
+        try {
+            await TrackPlayer.removeUpcomingTracks();
+        } catch (error) {
+            console.error('Error removing upcoming tracks:', error);
+        }
+    }
+}
+
+export default new AudioPlayerService();
