@@ -6,3 +6,4 @@ export { default as CustomTabBar } from './CustomTabBar';
 export { default as CompactSidebar } from './CompactSidebar';
 export { default as LibraryPanel } from './LibraryPanel';
 export { default as MediaGrid } from './MediaGrid';
+export { default as SettingsModal } from './SettingsModal';

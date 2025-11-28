@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import SettingsModal from './SettingsModal';
 
 const CompactSidebar = ({ activeSection, onSectionChange }) => {
+  const [showSettings, setShowSettings] = useState(false);
   const sections = [
     { id: 'home', icon: '🏠', label: 'Inicio' },
     { id: 'audio', icon: '🎵', label: 'Audio' },
@@ -41,9 +43,18 @@ const CompactSidebar = ({ activeSection, onSectionChange }) => {
       </View>
 
       {/* Menu Button */}
-      <TouchableOpacity style={styles.menuButton} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.menuButton}
+        activeOpacity={0.7}
+        onPress={() => setShowSettings(true)}>
         <Text style={styles.menuIcon}>☰</Text>
       </TouchableOpacity>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </View>
   );
 };
