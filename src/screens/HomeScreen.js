@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import CompactSidebar from '../components/CompactSidebar';
 import LibraryPanel from '../components/LibraryPanel';
@@ -16,6 +17,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import MiniPlayer from '../components/MiniPlayer';
 import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
+import FolderList from '../components/FolderList';
 
 const HomeScreen = ({ navigation }) => {
   const [activeSection, setActiveSection] = useState('home');
@@ -103,6 +105,29 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  const getGridMedia = () => {
+    if (activeSection === 'audio') {
+      return mediaFiles.audio || [];
+    } else if (activeSection === 'video') {
+      return mediaFiles.video || [];
+    } else {
+      return [...(mediaFiles.audio || []), ...(mediaFiles.video || [])];
+    }
+  };
+
+  const getSectionTitle = () => {
+    switch (activeSection) {
+      case 'audio':
+        return 'Música';
+      case 'video':
+        return 'Videos';
+      case 'folders':
+        return 'Carpetas';
+      default:
+        return 'Inicio';
+    }
+  };
+
   if (loading && !refreshing) {
     return <LoadingScreen message="Escaneando archivos multimedia..." />;
   }
@@ -128,25 +153,11 @@ const HomeScreen = ({ navigation }) => {
     );
   }
 
-  // Determinar qué archivos mostrar en el grid principal
-  const getGridMedia = () => {
-    if (activeSection === 'audio') {
-      return mediaFiles.audio || [];
-    } else if (activeSection === 'video') {
-      return mediaFiles.video || [];
-    } else if (activeSection === 'home') {
-      return [...(mediaFiles.video || []), ...(mediaFiles.audio || [])];
-    }
-    return [];
-  };
-
   const currentMedia = getGridMedia();
-  const displayType = activeSection === 'audio' ? 'audio' : 'video';
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
-
       <View style={styles.mainContainer}>
         {/* Compact Sidebar */}
         <CompactSidebar
@@ -154,7 +165,7 @@ const HomeScreen = ({ navigation }) => {
           onSectionChange={setActiveSection}
         />
 
-        {/* Library Panel - Ahora recibe mediaFiles completo y activeSection */}
+        {/* Library Panel */}
         <LibraryPanel
           mediaFiles={mediaFiles}
           onMediaPress={handleMediaPress}
@@ -166,27 +177,13 @@ const HomeScreen = ({ navigation }) => {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>
-                {activeSection === 'home' && 'Inicio'}
-                {activeSection === 'audio' && 'Música'}
-                {activeSection === 'video' && 'Videos'}
-                {activeSection === 'favorites' && 'Favoritos'}
-                {activeSection === 'folders' && 'Carpetas'}
-              </Text>
+              <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
               <Text style={styles.headerSubtitle}>
-                {activeSection === 'audio' && `${mediaFiles.audio?.length || 0} canciones disponibles`}
-                {activeSection === 'video' && `${mediaFiles.video?.length || 0} videos disponibles`}
-                {(activeSection === 'home' || activeSection === 'favorites' || activeSection === 'folders') &&
-                  `${currentMedia.length} archivo${currentMedia.length !== 1 ? 's' : ''} disponible${currentMedia.length !== 1 ? 's' : ''}`
-                }
+                {currentMedia.length} archivos
               </Text>
             </View>
-
             <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.headerButton} activeOpacity={0.7}>
-                <Text style={styles.headerButtonText}>Ordenar</Text>
-              </TouchableOpacity>
-              {currentMedia.length > 0 && (
+              {currentMedia.length > 0 && activeSection !== 'folders' && (
                 <TouchableOpacity
                   style={styles.headerButtonPrimary}
                   activeOpacity={0.7}
@@ -195,17 +192,17 @@ const HomeScreen = ({ navigation }) => {
                       handleMediaPress(currentMedia[0]);
                     }
                   }}>
-                  <Text style={styles.headerButtonPrimaryText}>▶  Reproducir todo</Text>
+                  <Text style={styles.headerButtonPrimaryText}>
+                    Reproducir todo
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
           </View>
 
-          {/* Media Grid */}
-          <MediaGrid
-            items={currentMedia}
-            onItemPress={handleMediaPress}
-            type={displayType}
+          {/* Content */}
+          <ScrollView
+            style={styles.scrollView}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -213,17 +210,26 @@ const HomeScreen = ({ navigation }) => {
                 tintColor="#1DB954"
                 colors={['#1DB954']}
               />
-            }
-          />
+            }>
+            {activeSection === 'folders' ? (
+              <FolderList
+                mediaFiles={mediaFiles}
+                onMediaPress={handleMediaPress}
+              />
+            ) : (
+              <MediaGrid
+                mediaFiles={currentMedia}
+                onMediaPress={handleMediaPress}
+              />
+            )}
+          </ScrollView>
         </View>
       </View>
 
       {/* Mini Player */}
-      <MiniPlayer
-        onPress={() => {
-          // Navegar al AudioPlayer cuando se toca el mini player
-          const currentMedia = getGridMedia();
-          if (currentMedia.length > 0) {
+      {mediaFiles.audio && mediaFiles.audio.length > 0 && (
+        <MiniPlayer
+          onPress={() => {
             const audioFiles = mediaFiles.audio || [];
             if (audioFiles.length > 0) {
               navigation.navigate('AudioPlayer', {
@@ -231,9 +237,9 @@ const HomeScreen = ({ navigation }) => {
                 playlist: audioFiles,
               });
             }
-          }
-        }}
-      />
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -250,6 +256,9 @@ const styles = StyleSheet.create({
   contentArea: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  SectionList,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
@@ -12,7 +13,7 @@ const { width } = Dimensions.get('window');
 // Calculamos el ancho de las tarjetas considerando: sidebar (80) + panel (320) + padding lateral (64) + gaps entre tarjetas (40)
 const CARD_WIDTH = (width - 80 - 320 - 64 - 40) / 3;
 
-const MediaGrid = ({ items, onItemPress, type = 'video', refreshControl }) => {
+const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, grouped = false }) => {
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -24,7 +25,7 @@ const MediaGrid = ({ items, onItemPress, type = 'video', refreshControl }) => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => onItemPress(item)}
+      onPress={() => onItemPress && onItemPress(item)}
       activeOpacity={0.8}>
       {/* Thumbnail */}
       <View style={styles.thumbnail}>
@@ -50,13 +51,19 @@ const MediaGrid = ({ items, onItemPress, type = 'video', refreshControl }) => {
       {/* Info */}
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {item.name}
+          {item.name || 'Sin nombre'}
         </Text>
         <Text style={styles.cardSubtitle}>
-          {formatFileSize(item.size)}
+          {formatFileSize(item.size || 0)}
         </Text>
       </View>
     </TouchableOpacity>
+  );
+
+  const renderSectionHeader = ({ section: { title } }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+    </View>
   );
 
   const renderEmpty = () => (
@@ -73,14 +80,47 @@ const MediaGrid = ({ items, onItemPress, type = 'video', refreshControl }) => {
     </View>
   );
 
+  // Validar que items sea un array
+  const validItems = Array.isArray(items) ? items : [];
+
+  if (grouped) {
+    return (
+      <SectionList
+        sections={validItems}
+        keyExtractor={(item, index) => item.id || `item-${index}`}
+        renderItem={({ item, index, section }) => {
+          if (index % 3 !== 0) return null;
+
+          const rowItems = section.data.slice(index, index + 3);
+
+          return (
+            <View style={styles.row}>
+              {rowItems.map((rowItem, idx) => (
+                <View key={rowItem.id || `row-item-${idx}`} style={{ width: CARD_WIDTH, marginRight: 20 }}>
+                  {renderItem({ item: rowItem })}
+                </View>
+              ))}
+            </View>
+          );
+        }}
+        renderSectionHeader={renderSectionHeader}
+        contentContainerStyle={validItems.length === 0 ? styles.emptyList : styles.gridContent}
+        ListEmptyComponent={renderEmpty}
+        showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
+        stickySectionHeadersEnabled={false}
+      />
+    );
+  }
+
   return (
     <FlatList
-      data={items}
+      data={validItems}
       renderItem={renderItem}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(item, index) => item.id || `item-${index}`}
       numColumns={3}
-      contentContainerStyle={items.length === 0 ? styles.emptyList : styles.gridContent}
-      columnWrapperStyle={items.length > 0 ? styles.row : null}
+      contentContainerStyle={validItems.length === 0 ? styles.emptyList : styles.gridContent}
+      columnWrapperStyle={validItems.length > 0 ? styles.row : null}
       ListEmptyComponent={renderEmpty}
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
@@ -97,12 +137,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   row: {
+    flexDirection: 'row',
     justifyContent: 'flex-start',
     marginBottom: 24,
-    gap: 20,
   },
   card: {
-    width: CARD_WIDTH,
+    width: '100%',
     marginBottom: 4,
   },
   thumbnail: {
@@ -190,6 +230,17 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     color: '#666666',
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1a1a1a',
+  },
+  sectionHeaderText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
 
