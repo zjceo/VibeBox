@@ -9,14 +9,15 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import MediaList from '../components/MediaList';
+import CompactSidebar from '../components/CompactSidebar';
+import LibraryPanel from '../components/LibraryPanel';
+import MediaGrid from '../components/MediaGrid';
 import LoadingScreen from '../components/LoadingScreen';
-import CustomTabBar from '../components/CustomTabBar';
 import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
 
 const HomeScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState('audio');
+  const [activeSection, setActiveSection] = useState('home');
   const [mediaFiles, setMediaFiles] = useState({
     audio: [],
     video: [],
@@ -32,20 +33,20 @@ const HomeScreen = ({ navigation }) => {
   const checkPermissionsAndLoadMedia = async () => {
     try {
       const hasPermission = await PermissionsService.checkStoragePermission();
-      
+
       if (!hasPermission) {
         const granted = await PermissionsService.requestStoragePermission();
         setHasPermission(granted);
-        
+
         if (!granted) {
           Alert.alert(
             'Permisos necesarios',
             'VibeBox necesita acceso al almacenamiento para encontrar tus archivos multimedia.',
             [
               { text: 'Cancelar', style: 'cancel' },
-              { 
-                text: 'Solicitar permisos', 
-                onPress: () => checkPermissionsAndLoadMedia() 
+              {
+                text: 'Solicitar permisos',
+                onPress: () => checkPermissionsAndLoadMedia()
               },
             ]
           );
@@ -83,13 +84,19 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleMediaPress = (item) => {
-    if (item.type === 'audio') {
-      navigation.navigate('AudioPlayer', { 
+    // Determinar el tipo de archivo
+    const isAudio = item.type === 'audio' ||
+      item.extension === '.mp3' ||
+      item.extension === '.m4a' ||
+      item.extension === '.wav';
+
+    if (isAudio) {
+      navigation.navigate('AudioPlayer', {
         track: item,
         playlist: mediaFiles.audio,
       });
     } else {
-      navigation.navigate('VideoPlayer', { 
+      navigation.navigate('VideoPlayer', {
         video: item,
       });
     }
@@ -102,7 +109,7 @@ const HomeScreen = ({ navigation }) => {
   if (!hasPermission) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#121212" />
+        <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionIcon}>🔒</Text>
           <Text style={styles.permissionTitle}>Permisos necesarios</Text>
@@ -120,40 +127,95 @@ const HomeScreen = ({ navigation }) => {
     );
   }
 
-  const currentMedia = activeTab === 'audio' ? mediaFiles.audio : mediaFiles.video;
+  // Determinar qué archivos mostrar en el grid principal
+  const getGridMedia = () => {
+    if (activeSection === 'audio') {
+      return mediaFiles.audio || [];
+    } else if (activeSection === 'video') {
+      return mediaFiles.video || [];
+    } else if (activeSection === 'home') {
+      return [...(mediaFiles.video || []), ...(mediaFiles.audio || [])];
+    }
+    return [];
+  };
+
+  const currentMedia = getGridMedia();
+  const displayType = activeSection === 'audio' ? 'audio' : 'video';
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>VibeBox</Text>
-        <Text style={styles.headerSubtitle}>
-          {currentMedia.length} {activeTab === 'audio' ? 'canciones' : 'videos'}
-        </Text>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
 
-      {/* Tab Bar */}
-      <CustomTabBar 
-        activeTab={activeTab} 
-        onTabPress={setActiveTab} 
-      />
+      <View style={styles.mainContainer}>
+        {/* Compact Sidebar */}
+        <CompactSidebar
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+        />
 
-      {/* Media List */}
-      <MediaList
-        items={currentMedia}
-        onItemPress={handleMediaPress}
-        type={activeTab}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#1DB954"
-            colors={['#1DB954']}
+        {/* Library Panel - Ahora recibe mediaFiles completo y activeSection */}
+        <LibraryPanel
+          mediaFiles={mediaFiles}
+          onMediaPress={handleMediaPress}
+          activeSection={activeSection}
+        />
+
+        {/* Main Content Area */}
+        <View style={styles.contentArea}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerTitle}>
+                {activeSection === 'home' && 'Inicio'}
+                {activeSection === 'audio' && 'Música'}
+                {activeSection === 'video' && 'Videos'}
+                {activeSection === 'favorites' && 'Favoritos'}
+                {activeSection === 'folders' && 'Carpetas'}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {activeSection === 'audio' && `${mediaFiles.audio?.length || 0} canciones disponibles`}
+                {activeSection === 'video' && `${mediaFiles.video?.length || 0} videos disponibles`}
+                {(activeSection === 'home' || activeSection === 'favorites' || activeSection === 'folders') &&
+                  `${currentMedia.length} archivo${currentMedia.length !== 1 ? 's' : ''} disponible${currentMedia.length !== 1 ? 's' : ''}`
+                }
+              </Text>
+            </View>
+
+            <View style={styles.headerRight}>
+              <TouchableOpacity style={styles.headerButton} activeOpacity={0.7}>
+                <Text style={styles.headerButtonText}>Ordenar</Text>
+              </TouchableOpacity>
+              {currentMedia.length > 0 && (
+                <TouchableOpacity
+                  style={styles.headerButtonPrimary}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (currentMedia.length > 0) {
+                      handleMediaPress(currentMedia[0]);
+                    }
+                  }}>
+                  <Text style={styles.headerButtonPrimaryText}>▶  Reproducir todo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Media Grid */}
+          <MediaGrid
+            items={currentMedia}
+            onItemPress={handleMediaPress}
+            type={displayType}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#1DB954"
+                colors={['#1DB954']}
+              />
+            }
           />
-        }
-      />
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -163,25 +225,63 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0a0a',
   },
+  mainContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  contentArea: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    backgroundColor: '#121212',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 32,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: '#1a1a1a',
+  },
+  headerLeft: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '800',
     color: '#ffffff',
     marginBottom: 6,
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: '#b3b3b3',
+    fontSize: 14,
+    color: '#666666',
     fontWeight: '500',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  headerButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+  },
+  headerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  headerButtonPrimary: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#1DB954',
+    borderRadius: 10,
+  },
+  headerButtonPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   permissionContainer: {
     flex: 1,

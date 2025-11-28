@@ -6,7 +6,24 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 
 class AudioPlayerService {
-  // ELIMINAMOS initialize() porque ya se hace en App.js
+  initialize() {
+    TrackPlayer.setupPlayer({
+      capabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.Skip,
+        Capability.Seek,
+        Capability.Stop,
+      ],
+      compactCapabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.Skip,
+        Capability.Seek,
+      ],
+      compactUI: true,
+    });
+  }
   // NO inicializamos el player aquí para evitar duplicación
 
   async addTrack(track) {
@@ -101,7 +118,7 @@ class AudioPlayerService {
     try {
       const trackIndex = await TrackPlayer.getActiveTrackIndex();
       if (trackIndex == null) return null;
-      
+
       const track = await TrackPlayer.getTrack(trackIndex);
       return track;
     } catch (error) {

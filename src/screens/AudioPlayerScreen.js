@@ -19,7 +19,7 @@ import TrackPlayer, { Event, State, useTrackPlayerEvents } from 'react-native-tr
 
 const AudioPlayerScreen = ({ route, navigation }) => {
   const { track, playlist = [] } = route.params;
-  
+
   const [currentTrack, setCurrentTrack] = useState(track);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -30,7 +30,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     initializePlayer();
-    
+
     return () => {
       // Cleanup cuando se desmonta el componente
       AudioPlayerService.pause();
@@ -75,20 +75,20 @@ const AudioPlayerScreen = ({ route, navigation }) => {
       setLoading(true);
       await AudioPlayerService.initialize();
       await AudioPlayerService.reset();
-      
+
       // Agregar toda la playlist
       await AudioPlayerService.addTracks(playlist);
-      
+
       // Buscar el índice del track actual
       const trackIndex = playlist.findIndex(t => t.id === track.id);
-      
+
       // Saltar al track seleccionado
       if (trackIndex > 0) {
         for (let i = 0; i < trackIndex; i++) {
           await AudioPlayerService.skipToNext();
         }
       }
-      
+
       // Reproducir
       await AudioPlayerService.play();
       setIsPlaying(true);
@@ -170,7 +170,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -286,7 +286,13 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   albumArt: {
-    width: width * 0.75,
+    _width: width * 0.75,
+    get width() {
+      return this._width;
+    },
+    set width(value) {
+      this._width = value;
+    },
     height: width * 0.75,
     borderRadius: 24,
     backgroundColor: '#1a1a1a',
