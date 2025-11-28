@@ -13,6 +13,7 @@ import CompactSidebar from '../components/CompactSidebar';
 import LibraryPanel from '../components/LibraryPanel';
 import MediaGrid from '../components/MediaGrid';
 import LoadingScreen from '../components/LoadingScreen';
+import MiniPlayer from '../components/MiniPlayer';
 import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
 
@@ -216,6 +217,23 @@ const HomeScreen = ({ navigation }) => {
           />
         </View>
       </View>
+
+      {/* Mini Player */}
+      <MiniPlayer
+        onPress={() => {
+          // Navegar al AudioPlayer cuando se toca el mini player
+          const currentMedia = getGridMedia();
+          if (currentMedia.length > 0) {
+            const audioFiles = mediaFiles.audio || [];
+            if (audioFiles.length > 0) {
+              navigation.navigate('AudioPlayer', {
+                track: audioFiles[0],
+                playlist: audioFiles,
+              });
+            }
+          }
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -237,8 +255,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 32,
+    paddingHorizontal: 36,
+    paddingVertical: 28,
+    paddingTop: 32,
     borderBottomWidth: 1,
     borderBottomColor: '#1a1a1a',
   },

@@ -12,3 +12,5 @@ AppRegistry.registerComponent(appName, () => App);
 
 // Registrar el servicio de TrackPlayer para reproducción en segundo plano
 TrackPlayer.registerPlaybackService(() => require('./src/services/TrackPlayerService'));
+
+TrackPlayer.registerPlaybackService(() => require('./src/services/playbackService'));

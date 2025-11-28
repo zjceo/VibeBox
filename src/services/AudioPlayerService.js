@@ -1,59 +1,147 @@
 import TrackPlayer, {
   Capability,
-  Event,
+  AppKilledPlaybackBehavior,
   RepeatMode,
   State,
 } from 'react-native-track-player';
 
 class AudioPlayerService {
-  initialize() {
-    TrackPlayer.setupPlayer({
-      capabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.Skip,
-        Capability.Seek,
-        Capability.Stop,
-      ],
-      compactCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.Skip,
-        Capability.Seek,
-      ],
-      compactUI: true,
-    });
+  constructor() {
+    this.isInitialized = false;
   }
-  // NO inicializamos el player aquí para evitar duplicación
+
+  async initialize() {
+    if (this.isInitialized) {
+      console.log('TrackPlayer already initialized, skipping...');
+      return;
+    }
+
+    try {
+      // Verificar si ya está inicializado
+      const state = await TrackPlayer.getState();
+
+      // Si ya está inicializado, solo actualizar opciones
+      if (state !== State.None) {
+        console.log('TrackPlayer was already initialized, updating options...');
+        await this.updatePlayerOptions();
+        this.isInitialized = true;
+        return;
+      }
+    } catch (error) {
+      // Si falla getState, significa que no está inicializado
+      console.log('TrackPlayer not initialized yet, setting up...');
+    }
+
+    try {
+      await TrackPlayer.setupPlayer({
+        waitForBuffer: true,
+      });
+
+      await this.updatePlayerOptions();
+
+      this.isInitialized = true;
+      console.log('TrackPlayer initialized successfully');
+    } catch (error) {
+      // Si el error es que ya está inicializado, no es un problema
+      if (error.message?.includes('already been initialized')) {
+        console.log('TrackPlayer was already initialized by another instance');
+        await this.updatePlayerOptions();
+        this.isInitialized = true;
+      } else {
+        console.error('Error initializing TrackPlayer:', error);
+        throw error;
+      }
+    }
+  }
+
+  async updatePlayerOptions() {
+    try {
+      // Configurar capacidades del reproductor
+      await TrackPlayer.updateOptions({
+        // Comportamiento cuando la app se cierra
+        android: {
+          appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
+        },
+
+        // Capacidades (botones que aparecen en la notificación)
+        capabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+          Capability.SeekTo,
+          Capability.Stop,
+        ],
+
+        // Capacidades compactas (las que aparecen siempre)
+        compactCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+        ],
+
+        // Configuración de la notificación
+        notificationCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+        ],
+
+        // Iconos personalizados (opcionales - comenta si no los tienes)
+        // playIcon: require('../assets/icons/play.png'),
+        // pauseIcon: require('../assets/icons/pause.png'),
+        // stopIcon: require('../assets/icons/stop.png'),
+        // previousIcon: require('../assets/icons/previous.png'),
+        // nextIcon: require('../assets/icons/next.png'),
+      });
+    } catch (error) {
+      console.error('Error updating player options:', error);
+    }
+  }
+
+  async reset() {
+    try {
+      await TrackPlayer.reset();
+    } catch (error) {
+      console.error('Error resetting player:', error);
+    }
+  }
 
   async addTrack(track) {
     try {
       await TrackPlayer.add({
         id: track.id,
         url: track.uri,
-        title: track.name,
-        artist: track.artist || 'Desconocido',
+        title: track.name || 'Sin título',
+        artist: track.artist || 'Artista desconocido',
+        album: track.album || 'Álbum desconocido',
         artwork: track.artwork,
         duration: track.duration || 0,
       });
     } catch (error) {
       console.error('Error adding track:', error);
+      throw error;
     }
   }
 
   async addTracks(tracks) {
     try {
+      // Formatear tracks para TrackPlayer
       const formattedTracks = tracks.map(track => ({
         id: track.id,
         url: track.uri,
-        title: track.name,
-        artist: track.artist || 'Desconocido',
+        title: track.name || 'Sin título',
+        artist: track.artist || 'Artista desconocido',
+        album: track.album || 'Álbum desconocido',
         artwork: track.artwork,
         duration: track.duration || 0,
       }));
+
       await TrackPlayer.add(formattedTracks);
     } catch (error) {
       console.error('Error adding tracks:', error);
+      throw error;
     }
   }
 
@@ -97,11 +185,12 @@ class AudioPlayerService {
     }
   }
 
-  async setRepeatMode(mode) {
+  async getProgress() {
     try {
-      await TrackPlayer.setRepeatMode(mode);
+      return await TrackPlayer.getProgress();
     } catch (error) {
-      console.error('Error setting repeat mode:', error);
+      console.error('Error getting progress:', error);
+      return { position: 0, duration: 0, buffered: 0 };
     }
   }
 
@@ -111,6 +200,14 @@ class AudioPlayerService {
     } catch (error) {
       console.error('Error getting state:', error);
       return State.None;
+    }
+  }
+
+  async setRepeatMode(mode) {
+    try {
+      await TrackPlayer.setRepeatMode(mode);
+    } catch (error) {
+      console.error('Error setting repeat mode:', error);
     }
   }
 
@@ -127,20 +224,12 @@ class AudioPlayerService {
     }
   }
 
-  async getProgress() {
+  async getTrack(trackIndex) {
     try {
-      return await TrackPlayer.getProgress();
+      return await TrackPlayer.getTrack(trackIndex);
     } catch (error) {
-      console.error('Error getting progress:', error);
-      return { position: 0, duration: 0, buffered: 0 };
-    }
-  }
-
-  async reset() {
-    try {
-      await TrackPlayer.reset();
-    } catch (error) {
-      console.error('Error resetting:', error);
+      console.error('Error getting track:', error);
+      return null;
     }
   }
 
