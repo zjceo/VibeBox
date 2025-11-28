@@ -161,27 +161,22 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#121212',
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    backgroundColor: '#121212',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   headerTitle: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 6,
-    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: '#b3b3b3',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#888888',
   },
   permissionContainer: {
     flex: 1,
