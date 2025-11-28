@@ -8,7 +8,6 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
-  ScrollView,
 } from 'react-native';
 import CompactSidebar from '../components/CompactSidebar';
 import LibraryPanel from '../components/LibraryPanel';
@@ -115,6 +114,29 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  const groupMediaByFolder = (items) => {
+    if (!items || items.length === 0) return [];
+
+    const grouped = {};
+
+    items.forEach(item => {
+      // Extraer el nombre de la carpeta padre del path
+      const pathParts = item.path ? item.path.split('/') : [];
+      const folderName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : 'Sin carpeta';
+
+      if (!grouped[folderName]) {
+        grouped[folderName] = [];
+      }
+      grouped[folderName].push(item);
+    });
+
+    // Convertir a formato de secciones para SectionList
+    return Object.keys(grouped).map(folderName => ({
+      title: folderName,
+      data: grouped[folderName]
+    }));
+  };
+
   const getSectionTitle = () => {
     switch (activeSection) {
       case 'audio':
@@ -154,6 +176,8 @@ const HomeScreen = ({ navigation }) => {
   }
 
   const currentMedia = getGridMedia();
+  const shouldGroup = activeSection === 'audio' || activeSection === 'video';
+  const mediaData = shouldGroup ? groupMediaByFolder(currentMedia) : currentMedia;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -201,28 +225,38 @@ const HomeScreen = ({ navigation }) => {
           </View>
 
           {/* Content */}
-          <ScrollView
-            style={styles.scrollView}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor="#1DB954"
-                colors={['#1DB954']}
-              />
-            }>
+          <View style={styles.contentContainer}>
             {activeSection === 'folders' ? (
               <FolderList
                 mediaFiles={mediaFiles}
                 onMediaPress={handleMediaPress}
+                onUpdate={loadMediaFiles}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor="#1DB954"
+                    colors={['#1DB954']}
+                  />
+                }
               />
             ) : (
               <MediaGrid
-                mediaFiles={currentMedia}
-                onMediaPress={handleMediaPress}
+                items={mediaData}
+                onItemPress={handleMediaPress}
+                type={activeSection === 'audio' ? 'audio' : 'video'}
+                grouped={shouldGroup}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor="#1DB954"
+                    colors={['#1DB954']}
+                  />
+                }
               />
             )}
-          </ScrollView>
+          </View>
         </View>
       </View>
 
@@ -257,7 +291,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0a0a',
   },
-  scrollView: {
+  contentContainer: {
     flex: 1,
   },
   header: {
