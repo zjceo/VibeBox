@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
-  Animated,
   Dimensions,
 } from 'react-native';
 
@@ -15,7 +14,7 @@ const { width } = Dimensions.get('window');
 import PlayerControls from '../components/PlayerControls';
 import LoadingScreen from '../components/LoadingScreen';
 import AudioPlayerService from '../services/AudioPlayerService';
-import TrackPlayer, { Event, State, useTrackPlayerEvents } from 'react-native-track-player';
+import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents } from 'react-native-track-player';
 
 const AudioPlayerScreen = ({ route, navigation }) => {
   const { track, playlist = [] } = route.params;
@@ -25,43 +24,44 @@ const AudioPlayerScreen = ({ route, navigation }) => {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [repeatMode, setRepeatMode] = useState('off'); // 'off', 'track', 'playlist'
-  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [repeatMode, setRepeatMode] = useState('off');
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     initializePlayer();
 
     return () => {
-      // Cleanup cuando se desmonta el componente
       AudioPlayerService.pause();
     };
   }, []);
 
-  // Evento para actualizar el progreso
+  // Actualizar progreso
   useEffect(() => {
     const interval = setInterval(async () => {
       if (isPlaying) {
         const progress = await AudioPlayerService.getProgress();
         setPosition(progress.position);
-        setDuration(progress.duration);
+        if (progress.duration > 0) {
+          setDuration(progress.duration);
+        }
       }
-    }, 1000);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [isPlaying]);
 
   // Track Player Events
-  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackTrackChanged], async (event) => {
+  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackActiveTrackChanged], async (event) => {
     if (event.type === Event.PlaybackState) {
       const state = await AudioPlayerService.getState();
       setIsPlaying(state === State.Playing);
     }
 
-    if (event.type === Event.PlaybackTrackChanged && event.nextTrack != null) {
-      const trackIndex = await TrackPlayer.getCurrentTrack();
+    if (event.type === Event.PlaybackActiveTrackChanged) {
+      const trackIndex = await TrackPlayer.getActiveTrackIndex();
       if (trackIndex != null) {
+        setCurrentIndex(trackIndex);
         const trackObject = await TrackPlayer.getTrack(trackIndex);
-        // Buscar el track en el playlist
         const fullTrack = playlist.find(t => t.id === trackObject.id);
         if (fullTrack) {
           setCurrentTrack(fullTrack);
@@ -73,6 +73,8 @@ const AudioPlayerScreen = ({ route, navigation }) => {
   const initializePlayer = async () => {
     try {
       setLoading(true);
+
+      // Inicializar solo si es necesario
       await AudioPlayerService.initialize();
       await AudioPlayerService.reset();
 
@@ -81,12 +83,11 @@ const AudioPlayerScreen = ({ route, navigation }) => {
 
       // Buscar el índice del track actual
       const trackIndex = playlist.findIndex(t => t.id === track.id);
+      setCurrentIndex(trackIndex);
 
-      // Saltar al track seleccionado
+      // Saltar al track si no es el primero
       if (trackIndex > 0) {
-        for (let i = 0; i < trackIndex; i++) {
-          await AudioPlayerService.skipToNext();
-        }
+        await TrackPlayer.skip(trackIndex);
       }
 
       // Reproducir
@@ -104,10 +105,8 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     try {
       if (isPlaying) {
         await AudioPlayerService.pause();
-        setIsPlaying(false);
       } else {
         await AudioPlayerService.play();
-        setIsPlaying(true);
       }
     } catch (error) {
       console.error('Error toggling play/pause:', error);
@@ -116,7 +115,13 @@ const AudioPlayerScreen = ({ route, navigation }) => {
 
   const handleNext = async () => {
     try {
-      await AudioPlayerService.skipToNext();
+      const queue = await AudioPlayerService.getQueue();
+      if (currentIndex < queue.length - 1) {
+        await AudioPlayerService.skipToNext();
+      } else if (repeatMode === 'playlist') {
+        await TrackPlayer.skip(0);
+        await AudioPlayerService.play();
+      }
     } catch (error) {
       console.error('Error skipping to next:', error);
     }
@@ -124,7 +129,13 @@ const AudioPlayerScreen = ({ route, navigation }) => {
 
   const handlePrevious = async () => {
     try {
-      await AudioPlayerService.skipToPrevious();
+      if (position > 3) {
+        // Si llevamos más de 3 segundos, reiniciar la canción
+        await AudioPlayerService.seekTo(0);
+      } else {
+        // Si no, ir a la anterior
+        await AudioPlayerService.skipToPrevious();
+      }
     } catch (error) {
       console.error('Error skipping to previous:', error);
     }
@@ -143,13 +154,13 @@ const AudioPlayerScreen = ({ route, navigation }) => {
       let newMode;
       if (repeatMode === 'off') {
         newMode = 'track';
-        await AudioPlayerService.setRepeatMode(TrackPlayer.REPEAT_TRACK);
+        await AudioPlayerService.setRepeatMode(RepeatMode.Track);
       } else if (repeatMode === 'track') {
         newMode = 'playlist';
-        await AudioPlayerService.setRepeatMode(TrackPlayer.REPEAT_QUEUE);
+        await AudioPlayerService.setRepeatMode(RepeatMode.Queue);
       } else {
         newMode = 'off';
-        await AudioPlayerService.setRepeatMode(TrackPlayer.REPEAT_OFF);
+        await AudioPlayerService.setRepeatMode(RepeatMode.Off);
       }
       setRepeatMode(newMode);
     } catch (error) {
@@ -158,9 +169,15 @@ const AudioPlayerScreen = ({ route, navigation }) => {
   };
 
   const getRepeatIcon = () => {
-    if (repeatMode === 'off') return '🔁';
-    if (repeatMode === 'track') return '🔂';
-    return '🔁';
+    if (repeatMode === 'off') return 'repeat';
+    if (repeatMode === 'track') return 'repeat-1';
+    return 'repeat';
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
@@ -179,7 +196,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
           activeOpacity={0.7}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reproduciendo</Text>
+        <Text style={styles.headerTitle}>Reproduciendo ahora</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -196,54 +213,46 @@ const AudioPlayerScreen = ({ route, navigation }) => {
           {currentTrack.name}
         </Text>
         <Text style={styles.trackArtist}>
-          Desconocido • {currentTrack.extension}
+          {currentTrack.extension?.toUpperCase()} • {playlist.length} canciones
         </Text>
       </View>
 
-      {/* Player Controls */}
-      <PlayerControls
-        isPlaying={isPlaying}
-        onPlayPause={handlePlayPause}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-        onSeek={handleSeek}
-        position={position}
-        duration={duration}
-        showSkipButtons={true}
-      />
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
+        <PlayerControls
+          isPlaying={isPlaying}
+          onPlayPause={handlePlayPause}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          onSeek={handleSeek}
+          position={position}
+          duration={duration}
+          showSkipButtons={true}
+        />
+      </View>
 
       {/* Additional Controls */}
       <View style={styles.additionalControls}>
         <TouchableOpacity
-          style={styles.iconButton}
+          style={[styles.iconButton, repeatMode !== 'off' && styles.iconButtonActive]}
           onPress={toggleRepeat}
           activeOpacity={0.7}>
-          <Text style={[
-            styles.iconButtonText,
-            repeatMode !== 'off' && styles.activeIcon
-          ]}>
-            {getRepeatIcon()}
+          <Text style={styles.iconText}>
+            {repeatMode === 'off' ? '🔁' : repeatMode === 'track' ? '🔂' : '🔁'}
           </Text>
         </TouchableOpacity>
+
+        <View style={styles.trackCounter}>
+          <Text style={styles.trackCounterText}>
+            {currentIndex + 1} / {playlist.length}
+          </Text>
+        </View>
 
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => setShuffleEnabled(!shuffleEnabled)}
           activeOpacity={0.7}>
-          <Text style={[
-            styles.iconButtonText,
-            shuffleEnabled && styles.activeIcon
-          ]}>
-            🔀
-          </Text>
+          <Text style={styles.iconText}>⋯</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Playlist Info */}
-      <View style={styles.playlistInfo}>
-        <Text style={styles.playlistText}>
-          {playlist.length} canciones en la lista
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -252,14 +261,16 @@ const AudioPlayerScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#121212',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   backButton: {
     width: 40,
@@ -268,13 +279,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backIcon: {
-    fontSize: 28,
+    fontSize: 24,
     color: '#ffffff',
+    fontWeight: 'bold',
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   placeholder: {
     width: 40,
@@ -286,98 +300,75 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   albumArt: {
-    _width: width * 0.75,
-    get width() {
-      return this._width;
-    },
-    set width(value) {
-      this._width = value;
-    },
-    height: width * 0.75,
-    borderRadius: 24,
+    width: width * 0.7,
+    height: width * 0.7,
+    borderRadius: 12,
     backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(29, 185, 84, 0.15)',
-    shadowColor: '#1DB954',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
   albumArtIcon: {
-    fontSize: 120,
-    textShadowColor: 'rgba(29, 185, 84, 0.3)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 10,
+    fontSize: 100,
+    opacity: 0.3,
   },
   trackInfoContainer: {
     paddingHorizontal: 32,
-    paddingVertical: 28,
+    paddingVertical: 20,
     alignItems: 'center',
-    backgroundColor: 'rgba(26, 26, 26, 0.4)',
-    marginHorizontal: 20,
-    borderRadius: 20,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   trackTitle: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 10,
-    letterSpacing: -0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: 8,
   },
   trackArtist: {
-    fontSize: 17,
+    fontSize: 14,
     color: '#b3b3b3',
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '500',
+  },
+  progressContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   additionalControls: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingVertical: 24,
-    gap: 80,
-    backgroundColor: 'rgba(26, 26, 26, 0.3)',
-    marginHorizontal: 40,
-    borderRadius: 50,
+    paddingBottom: 30,
   },
   iconButton: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 28,
+    borderRadius: 24,
   },
-  iconButtonText: {
-    fontSize: 24,
-    opacity: 0.5,
+  iconButtonActive: {
+    backgroundColor: 'rgba(29, 185, 84, 0.2)',
   },
-  activeIcon: {
-    opacity: 1,
-    textShadowColor: '#1DB954',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+  iconText: {
+    fontSize: 20,
+    color: '#b3b3b3',
   },
-  playlistInfo: {
-    paddingHorizontal: 32,
-    paddingBottom: 24,
-    alignItems: 'center',
-    marginTop: 8,
+  trackCounter: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
   },
-  playlistText: {
-    fontSize: 15,
-    color: '#9a9a9a',
+  trackCounterText: {
+    fontSize: 13,
+    color: '#b3b3b3',
     fontWeight: '600',
   },
 });
