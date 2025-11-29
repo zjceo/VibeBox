@@ -6,6 +6,7 @@ import {
     FlatList,
     TouchableOpacity,
     Alert,
+    RefreshControl,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
@@ -14,49 +15,64 @@ import MediaService from '../services/MediaService';
 const FolderList = ({ onUpdate, refreshControl }) => {
     const [paths, setPaths] = useState([]);
     const [customPaths, setCustomPaths] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         loadPaths();
     }, []);
 
     const loadPaths = async () => {
-        const allPaths = MediaService.getMediaPaths();
-        await MediaService.loadCustomPaths();
-        setCustomPaths(MediaService.customPaths);
-        setPaths(allPaths);
+        try {
+            await MediaService.loadCustomPaths();
+            const allPaths = MediaService.getMediaPaths();
+            setCustomPaths(MediaService.customPaths);
+            setPaths(allPaths);
+            console.log('FolderList - Loaded paths:', allPaths);
+            console.log('FolderList - Custom paths:', MediaService.customPaths);
+        } catch (error) {
+            console.error('Error loading paths:', error);
+            Alert.alert('Error', 'No se pudieron cargar las carpetas');
+        }
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadPaths();
+        setRefreshing(false);
     };
 
     const handleAddPath = async () => {
         try {
             const result = await DocumentPicker.pickDirectory();
-            if (result) {
-                // On Android, the uri might be content://... we need to handle this.
-                // For simplicity in this iteration, we'll try to use the uri directly or decode it if possible.
-                // Note: Accessing content:// uris directly with RNFS might require extra steps or a different approach
-                // like copying files or using a library that supports SAF (Storage Access Framework).
-                // However, for many cases, getting the path is what we want.
+            if (!result || !result.uri) return;
 
-                let path = result.uri;
+            let path = result.uri;
 
-                // Basic decoding for Android content URIs to get a usable path if possible
-                // This is a best-effort attempt. Real SAF support is more complex.
-                if (path.startsWith('content://com.android.externalstorage.documents/tree/primary%3A')) {
-                    path = '/storage/emulated/0/' + decodeURIComponent(path.split('primary%3A')[1]);
+            if (path.startsWith('content://com.android.externalstorage.documents/tree/primary%3A')) {
+                const decoded = decodeURIComponent(path.split('primary%3A')[1]);
+                path = '/storage/emulated/0/' + decoded;
+            } else if (path.startsWith('content://')) {
+                try {
+                    const stat = await RNFS.stat(path);
+                    path = stat.path || path;
+                } catch (e) {
+                    console.log('Could not resolve content URI to path:', e);
                 }
+            }
 
-                const success = await MediaService.addCustomPath(path);
-                if (success) {
-                    await loadPaths();
-                    if (onUpdate) onUpdate();
-                    Alert.alert('Éxito', 'Carpeta añadida correctamente');
-                } else {
-                    Alert.alert('Error', 'La carpeta ya existe o no se pudo añadir');
-                }
+            const success = await MediaService.addCustomPath(path);
+            if (success) {
+                await loadPaths();
+                if (onUpdate) onUpdate();
+                Alert.alert('Éxito', 'Carpeta añadida correctamente');
+            } else {
+                Alert.alert('Error', 'La carpeta ya existe o no se pudo añadir');
             }
         } catch (err) {
             if (DocumentPicker.isCancel(err)) {
-                // User cancelled the picker, do nothing
+                console.log('User cancelled folder picker');
             } else {
+                console.error('Error picking folder:', err);
                 Alert.alert('Error', 'No se pudo seleccionar la carpeta: ' + err.message);
             }
         }
@@ -85,6 +101,7 @@ const FolderList = ({ onUpdate, refreshControl }) => {
 
     const renderItem = ({ item }) => {
         const isCustom = customPaths.includes(item);
+        console.log('FolderList - Rendering item:', item);
 
         return (
             <View style={styles.itemContainer}>
@@ -102,7 +119,8 @@ const FolderList = ({ onUpdate, refreshControl }) => {
                 {isCustom && (
                     <TouchableOpacity
                         style={styles.deleteButton}
-                        onPress={() => handleRemovePath(item)}>
+                        onPress={() => handleRemovePath(item)}
+                        activeOpacity={0.7}>
                         <Text style={styles.deleteIcon}>🗑️</Text>
                     </TouchableOpacity>
                 )}
@@ -110,11 +128,16 @@ const FolderList = ({ onUpdate, refreshControl }) => {
         );
     };
 
+    console.log('FolderList - Rendering with paths.length:', paths.length);
+
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
                 <Text style={styles.title}>Carpetas de Medios</Text>
-                <TouchableOpacity style={styles.addButton} onPress={handleAddPath}>
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={handleAddPath}
+                    activeOpacity={0.8}>
                     <Text style={styles.addButtonText}>+ Añadir Carpeta</Text>
                 </TouchableOpacity>
             </View>
@@ -122,12 +145,25 @@ const FolderList = ({ onUpdate, refreshControl }) => {
             <FlatList
                 data={paths}
                 renderItem={renderItem}
-                keyExtractor={(item) => item}
-                contentContainerStyle={styles.listContent}
+                keyExtractor={(item, index) => `${item}-${index}`}
+                contentContainerStyle={paths.length === 0 ? styles.emptyListContent : styles.listContent}
                 ListEmptyComponent={
-                    <Text style={styles.emptyText}>No hay carpetas configuradas</Text>
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyIcon}>📂</Text>
+                        <Text style={styles.emptyText}>No hay carpetas configuradas</Text>
+                        <Text style={styles.emptySubtext}>
+                            Añade carpetas personalizadas para escanear
+                        </Text>
+                    </View>
                 }
-                refreshControl={refreshControl}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#1DB954"
+                        colors={['#1DB954']}
+                    />
+                }
             />
         </View>
     );
@@ -163,6 +199,11 @@ const styles = StyleSheet.create({
     },
     listContent: {
         paddingBottom: 20,
+    },
+    emptyListContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     itemContainer: {
         flexDirection: 'row',
@@ -204,11 +245,27 @@ const styles = StyleSheet.create({
     deleteIcon: {
         fontSize: 18,
     },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+    },
+    emptyIcon: {
+        fontSize: 64,
+        marginBottom: 16,
+        opacity: 0.3,
+    },
     emptyText: {
+        color: '#ffffff',
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    emptySubtext: {
         color: '#666666',
         textAlign: 'center',
-        marginTop: 40,
-        fontSize: 16,
+        fontSize: 14,
     },
 });
 
