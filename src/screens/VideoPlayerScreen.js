@@ -241,8 +241,9 @@ const VideoPlayerScreen = ({ route, navigation }) => {
             controls={false}
             repeat={false}
             rate={playbackRate}
-            playInBackground={false}
-            playWhenInactive={false}
+            playInBackground={true}
+            playWhenInactive={true}
+            ignoreSilentSwitch="ignore"
           />
 
           {/* Loading Indicator */}
