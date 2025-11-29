@@ -1,23 +1,39 @@
 import TrackPlayer, { Capability, State } from 'react-native-track-player';
+import type { MediaFile } from '../types';
+
+interface VideoTrack {
+    id: string;
+    url: string;
+    title: string;
+    artist: string;
+    artwork?: string;
+    duration: number;
+}
 
 class VideoNotificationService {
-    async setupNotification(video) {
+    /**
+     * Configura la notificación para un video
+     */
+    async setupNotification(video: MediaFile): Promise<void> {
         try {
             // Asegurarse de que TrackPlayer esté inicializado
-            const state = await TrackPlayer.getPlaybackState();
+            await TrackPlayer.getPlaybackState();
 
             // Limpiar la cola actual
             await TrackPlayer.reset();
 
-            // Agregar el video como un "track" para mostrar la notificación
-            await TrackPlayer.add({
+            // Preparar el track
+            const track: VideoTrack = {
                 id: video.id,
-                url: video.uri,
-                title: video.name,
+                url: video.path,
+                title: video.filename || video.name || video.title || 'Video',
                 artist: 'Video',
-                artwork: undefined, // Podrías agregar una miniatura aquí
-                duration: 0, // Se actualizará cuando cargue
-            });
+                artwork: video.thumbnail || video.artwork,
+                duration: video.duration || 0,
+            };
+
+            // Agregar el video como un "track" para mostrar la notificación
+            await TrackPlayer.add(track);
 
             // Configurar capacidades de la notificación
             await TrackPlayer.updateOptions({
@@ -43,7 +59,10 @@ class VideoNotificationService {
         }
     }
 
-    async play() {
+    /**
+     * Reproduce el video
+     */
+    async play(): Promise<void> {
         try {
             await TrackPlayer.play();
         } catch (error) {
@@ -51,7 +70,10 @@ class VideoNotificationService {
         }
     }
 
-    async pause() {
+    /**
+     * Pausa el video
+     */
+    async pause(): Promise<void> {
         try {
             await TrackPlayer.pause();
         } catch (error) {
@@ -59,7 +81,10 @@ class VideoNotificationService {
         }
     }
 
-    async stop() {
+    /**
+     * Detiene el video y limpia la notificación
+     */
+    async stop(): Promise<void> {
         try {
             await TrackPlayer.stop();
             await TrackPlayer.reset();
@@ -68,13 +93,26 @@ class VideoNotificationService {
         }
     }
 
-    async updateProgress(position, duration) {
+    /**
+     * Actualiza el progreso en la notificación
+     */
+    async updateProgress(position: number, duration: number): Promise<void> {
         try {
-            // Actualizar el progreso en la notificación
             await TrackPlayer.seekTo(position);
-            // TrackPlayer maneja automáticamente la actualización de la UI
         } catch (error) {
             // Ignorar errores silenciosamente
+        }
+    }
+
+    /**
+     * Verifica si TrackPlayer está reproduciendo
+     */
+    async isPlaying(): Promise<boolean> {
+        try {
+            const state = await TrackPlayer.getPlaybackState();
+            return state.state === State.Playing;
+        } catch (error) {
+            return false;
         }
     }
 }
