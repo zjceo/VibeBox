@@ -73,8 +73,14 @@ const HomeScreen = ({ navigation }) => {
   const loadMediaFiles = async () => {
     try {
       setLoading(true);
+      console.log('⏳ Loading media files...');
+      const startTime = Date.now();
+
       const media = await MediaService.scanMediaFiles();
       setMediaFiles(media);
+
+      const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`✅ Media loaded in ${loadTime}s`);
     } catch (error) {
       console.error('Error loading media files:', error);
       Alert.alert('Error', 'No se pudieron cargar los archivos multimedia');
