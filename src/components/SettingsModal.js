@@ -301,7 +301,6 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   content: {
-    flex: 1,
     paddingVertical: 8,
   },
   sectionHeader: {
