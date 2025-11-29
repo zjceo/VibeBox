@@ -12,6 +12,7 @@ import {
   FlatList,
   Modal,
   Animated,
+  TextInput,
 } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
@@ -37,6 +38,8 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPlaylist, setFilteredPlaylist] = useState(playlist);
 
   // Auto-ocultar controles con animación
   useEffect(() => {
@@ -167,6 +170,22 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Filtrar playlist según búsqueda
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredPlaylist(playlist);
+    } else {
+      const filtered = playlist.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredPlaylist(filtered);
+    }
+  }, [searchQuery, playlist]);
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   if (error) {
@@ -343,50 +362,109 @@ const VideoPlayerScreen = ({ route, navigation }) => {
         <View style={styles.modalContainer}>
           <View style={styles.playlistContainer}>
             <View style={styles.playlistHeader}>
-              <Text style={styles.playlistTitle}>
-                Lista de reproducción ({playlist.length})
-              </Text>
-              <TouchableOpacity onPress={() => setShowPlaylist(false)}>
+              <View>
+                <Text style={styles.playlistTitle}>
+                  Lista de reproducción
+                </Text>
+                <Text style={styles.playlistSubtitle}>
+                  {filteredPlaylist.length} de {playlist.length} videos
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.closeButtonContainer}
+                onPress={() => {
+                  setShowPlaylist(false);
+                  setSearchQuery('');
+                }}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={playlist}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.playlistItem,
-                    index === currentIndex && styles.playlistItemActive,
-                  ]}
-                  onPress={() => selectVideo(item, index)}>
-                  <View style={styles.playlistItemLeft}>
-                    <Text style={[
-                      styles.playlistNumber,
-                      index === currentIndex && styles.activeText,
-                    ]}>
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <View style={styles.playlistItemCenter}>
-                    <Text
-                      style={[
-                        styles.playlistItemTitle,
-                        index === currentIndex && styles.activeText,
-                      ]}
-                      numberOfLines={2}>
-                      {item.name}
-                    </Text>
-                    <Text style={styles.playlistItemSubtitle}>
-                      {item.extension?.toUpperCase()}
-                    </Text>
-                  </View>
-                  {index === currentIndex && (
-                    <Text style={styles.playingIcon}>▶</Text>
-                  )}
-                </TouchableOpacity>
+
+            {/* Buscador */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar video..."
+                  placeholderTextColor="#666"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={clearSearch}
+                    style={styles.clearButton}>
+                    <Text style={styles.clearIcon}>✕</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {searchQuery.length > 0 && (
+                <Text style={styles.searchResults}>
+                  {filteredPlaylist.length} resultado{filteredPlaylist.length !== 1 ? 's' : ''}
+                </Text>
               )}
-            />
+            </View>
+
+            {/* Lista de videos */}
+            {filteredPlaylist.length > 0 ? (
+              <FlatList
+                data={filteredPlaylist}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const itemIndex = playlist.findIndex(v => v.id === item.id);
+                  const isActive = itemIndex === currentIndex;
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.playlistItem,
+                        isActive && styles.playlistItemActive,
+                      ]}
+                      onPress={() => selectVideo(item, itemIndex)}>
+                      <View style={styles.playlistItemLeft}>
+                        <Text style={[
+                          styles.playlistNumber,
+                          isActive && styles.activeText,
+                        ]}>
+                          {itemIndex + 1}
+                        </Text>
+                      </View>
+                      <View style={styles.playlistItemCenter}>
+                        <Text
+                          style={[
+                            styles.playlistItemTitle,
+                            isActive && styles.activeText,
+                          ]}
+                          numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        <Text style={styles.playlistItemSubtitle}>
+                          {item.extension?.toUpperCase()}
+                        </Text>
+                      </View>
+                      {isActive && (
+                        <View style={styles.playingIndicator}>
+                          <View style={styles.playingDot} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            ) : (
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsIcon}>🔍</Text>
+                <Text style={styles.noResultsText}>
+                  No se encontraron videos
+                </Text>
+                <Text style={styles.noResultsSubtext}>
+                  Intenta con otro término de búsqueda
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -601,6 +679,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.1)',
   },
@@ -608,10 +687,67 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 4,
+  },
+  playlistSubtitle: {
+    fontSize: 13,
+    color: '#b3b3b3',
+  },
+  closeButtonContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeButton: {
-    fontSize: 28,
+    fontSize: 24,
     color: '#fff',
+    fontWeight: '300',
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  clearButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  clearIcon: {
+    fontSize: 14,
+    color: '#888',
+  },
+  searchResults: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 8,
+    fontWeight: '500',
   },
   playlistItem: {
     flexDirection: 'row',
@@ -651,9 +787,35 @@ const styles = StyleSheet.create({
   activeText: {
     color: '#1DB954',
   },
-  playingIcon: {
+  playingIndicator: {
+    marginLeft: 8,
+  },
+  playingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1DB954',
+  },
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  noResultsIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+    opacity: 0.3,
+  },
+  noResultsText: {
     fontSize: 16,
-    color: '#1DB954',
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  noResultsSubtext: {
+    fontSize: 13,
+    color: '#888',
   },
 });
 

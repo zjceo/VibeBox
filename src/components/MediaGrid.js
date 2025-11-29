@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,39 +9,24 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, grouped = false }) => {
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
+// Componente de Card memoizado para evitar re-renders innecesarios
+const MediaCard = memo(({ item, onPress, type, cardWidth }) => {
+  const handlePress = useCallback(() => {
+    onPress && onPress(item);
+  }, [item, onPress]);
 
-  // Calculate available width and columns
-  // Sidebar is 80 (portrait) or 70 (landscape)
-  // LibraryPanel is 320 (only on home, but let's assume worst case or pass a prop if needed)
-  // For now, let's assume full width minus sidebar and padding
-
-  const sidebarWidth = isLandscape ? 70 : 80;
-  const containerPadding = 48; // 24 * 2
-  const gap = 20;
-
-  // Determine number of columns based on available width
-  // Minimum card width ~160px
-  const availableWidth = width - sidebarWidth - containerPadding;
-  const minCardWidth = 160;
-  const numColumns = Math.max(2, Math.floor(availableWidth / (minCardWidth + gap)));
-
-  const cardWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
+  const formatFileSize = useCallback((bytes) => {
+    if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
+  }, []);
 
-  const renderItem = ({ item }) => (
+  return (
     <TouchableOpacity
       style={[styles.card, { width: cardWidth }]}
-      onPress={() => onItemPress && onItemPress(item)}
+      onPress={handlePress}
       activeOpacity={0.8}>
       {/* Thumbnail */}
       <View style={styles.thumbnail}>
@@ -70,19 +55,76 @@ const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, gr
           {item.name || 'Sin nombre'}
         </Text>
         <Text style={styles.cardSubtitle}>
-          {formatFileSize(item.size || 0)}
+          {formatFileSize(item.size)}
         </Text>
       </View>
     </TouchableOpacity>
   );
-
-  const renderSectionHeader = ({ section: { title } }) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
-    </View>
+}, (prevProps, nextProps) => {
+  // Solo re-renderizar si cambia el item o el ancho
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.cardWidth === nextProps.cardWidth
   );
+});
 
-  const renderEmpty = () => (
+// Componente de header de sección memoizado
+const SectionHeader = memo(({ title }) => (
+  <View style={styles.sectionHeader}>
+    <Text style={styles.sectionHeaderText}>{title}</Text>
+  </View>
+));
+
+const MediaGrid = ({
+  items = [],
+  onItemPress,
+  type = 'video',
+  refreshControl,
+  grouped = false
+}) => {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
+  // Calcular dimensiones (memoizado)
+  const dimensions = useMemo(() => {
+    const sidebarWidth = isLandscape ? 70 : 80;
+    const containerPadding = 48;
+    const gap = 20;
+    const availableWidth = width - sidebarWidth - containerPadding;
+    const minCardWidth = 160;
+    const numColumns = Math.max(2, Math.floor(availableWidth / (minCardWidth + gap)));
+    const cardWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
+
+    return { numColumns, cardWidth, gap };
+  }, [width, height, isLandscape]);
+
+  // Validar items
+  const validItems = useMemo(() => {
+    return Array.isArray(items) ? items : [];
+  }, [items]);
+
+  // Key extractor memoizado
+  const keyExtractor = useCallback((item, index) => {
+    return item.id || item.path || `item-${index}`;
+  }, []);
+
+  // Render item memoizado
+  const renderItem = useCallback(({ item }) => (
+    <MediaCard
+      item={item}
+      onPress={onItemPress}
+      type={type}
+      cardWidth={dimensions.cardWidth}
+    />
+  ), [onItemPress, type, dimensions.cardWidth]);
+
+  // Render section header memoizado
+  const renderSectionHeader = useCallback(({ section: { title } }) => (
+    <SectionHeader title={title} />
+  ), []);
+
+  // Empty component memoizado
+  const renderEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>
         {type === 'video' ? '🎬' : '🎵'}
@@ -94,27 +136,39 @@ const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, gr
         Agrega archivos a tu dispositivo
       </Text>
     </View>
-  );
+  ), [type]);
 
-  // Validar que items sea un array
-  const validItems = Array.isArray(items) ? items : [];
+  // Get item layout para optimizar scroll (solo para FlatList)
+  const getItemLayout = useCallback((data, index) => {
+    const itemHeight = dimensions.cardWidth * (9 / 16) + 80; // thumbnail + info
+    const row = Math.floor(index / dimensions.numColumns);
+    return {
+      length: itemHeight,
+      offset: itemHeight * row,
+      index,
+    };
+  }, [dimensions.cardWidth, dimensions.numColumns]);
 
   if (grouped) {
     return (
       <SectionList
         sections={validItems}
-        keyExtractor={(item, index) => item.id || `item-${index}`}
+        keyExtractor={keyExtractor}
         renderItem={({ item, index, section }) => {
-          if (index % numColumns !== 0) return null;
+          if (index % dimensions.numColumns !== 0) return null;
 
-          const rowItems = section.data.slice(index, index + numColumns);
+          const rowItems = section.data.slice(index, index + dimensions.numColumns);
 
           return (
-            <View style={[styles.row, { gap: gap }]}>
-              {rowItems.map((rowItem, idx) => (
-                <View key={rowItem.id || `row-item-${idx}`}>
-                  {renderItem({ item: rowItem })}
-                </View>
+            <View style={[styles.row, { gap: dimensions.gap }]}>
+              {rowItems.map((rowItem) => (
+                <MediaCard
+                  key={rowItem.id || rowItem.path}
+                  item={rowItem}
+                  onPress={onItemPress}
+                  type={type}
+                  cardWidth={dimensions.cardWidth}
+                />
               ))}
             </View>
           );
@@ -125,22 +179,37 @@ const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, gr
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
         stickySectionHeadersEnabled={false}
+        // Optimizaciones de performance
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        updateCellsBatchingPeriod={100}
+        initialNumToRender={5}
+        windowSize={10}
       />
     );
   }
 
   return (
     <FlatList
-      key={`grid-${numColumns}`} // Force re-render on column change
+      key={`grid-${dimensions.numColumns}`}
       data={validItems}
       renderItem={renderItem}
-      keyExtractor={(item, index) => item.id || `item-${index}`}
-      numColumns={numColumns}
+      keyExtractor={keyExtractor}
+      numColumns={dimensions.numColumns}
       contentContainerStyle={validItems.length === 0 ? styles.emptyList : styles.gridContent}
-      columnWrapperStyle={validItems.length > 0 ? [styles.row, { gap: gap }] : null}
+      columnWrapperStyle={validItems.length > 0 ? [styles.row, { gap: dimensions.gap }] : null}
       ListEmptyComponent={renderEmpty}
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
+      // Optimizaciones críticas de performance
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={dimensions.numColumns * 3}
+      updateCellsBatchingPeriod={50}
+      initialNumToRender={dimensions.numColumns * 5}
+      windowSize={10}
+      getItemLayout={getItemLayout}
+      // Performance boost adicional
+      legacyImplementation={false}
     />
   );
 };
@@ -261,4 +330,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MediaGrid;
+export default memo(MediaGrid);
