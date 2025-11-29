@@ -18,6 +18,7 @@ import MiniPlayer from '../components/MiniPlayer';
 import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
 import FolderList from '../components/FolderList';
+import { useVideo } from '../context/VideoContext';
 
 const HomeScreen = ({ navigation }) => {
   const [activeSection, setActiveSection] = useState('home');
@@ -28,9 +29,8 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
-
-  const { width } = useWindowDimensions();
-  const showLibraryPanel = width > 768; // Only show on tablets/desktop
+  const [showLibraryPanel, setShowLibraryPanel] = useState(true);
+  const { playVideo } = useVideo();
 
   useEffect(() => {
     checkPermissionsAndLoadMedia();
@@ -92,7 +92,7 @@ const HomeScreen = ({ navigation }) => {
   const handleRescan = async () => {
     setLoading(true);
     try {
-      const media = await MediaService.scanMediaFiles(true); // Force rescan
+      const media = await MediaService.scanMediaFiles(true);
       setMediaFiles(media);
       Alert.alert('Escaneo completado', 'Se ha actualizado tu biblioteca multimedia.');
     } catch (error) {
@@ -104,7 +104,6 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleMediaPress = (item) => {
-    // Determinar el tipo de archivo
     const isAudio = item.type === 'audio' ||
       item.extension === '.mp3' ||
       item.extension === '.m4a' ||
@@ -116,9 +115,7 @@ const HomeScreen = ({ navigation }) => {
         playlist: mediaFiles.audio,
       });
     } else {
-      navigation.navigate('VideoPlayer', {
-        video: item,
-      });
+      playVideo(item, mediaFiles.video);
     }
   };
 
@@ -138,7 +135,6 @@ const HomeScreen = ({ navigation }) => {
     const grouped = {};
 
     items.forEach(item => {
-      // Extraer el nombre de la carpeta padre del path
       const pathParts = item.path ? item.path.split('/') : [];
       const folderName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : 'Sin carpeta';
 
@@ -148,7 +144,6 @@ const HomeScreen = ({ navigation }) => {
       grouped[folderName].push(item);
     });
 
-    // Convertir a formato de secciones para SectionList
     return Object.keys(grouped).map(folderName => ({
       title: folderName,
       data: grouped[folderName]
@@ -201,14 +196,12 @@ const HomeScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       <View style={styles.mainContainer}>
-        {/* Compact Sidebar */}
         <CompactSidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           onRescan={handleRescan}
         />
 
-        {/* Library Panel - Solo mostrar en la sección 'home' y pantallas grandes */}
         {activeSection === 'home' && showLibraryPanel && (
           <LibraryPanel
             mediaFiles={mediaFiles}
@@ -217,9 +210,7 @@ const HomeScreen = ({ navigation }) => {
           />
         )}
 
-        {/* Main Content Area */}
         <View style={styles.contentArea}>
-          {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
@@ -245,7 +236,6 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Content */}
           <View style={styles.contentContainer}>
             {activeSection === 'folders' ? (
               <FolderList
@@ -280,21 +270,7 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
       </View>
-
-      {/* Mini Player */}
-      {mediaFiles.audio && mediaFiles.audio.length > 0 && (
-        <MiniPlayer
-          onPress={() => {
-            const audioFiles = mediaFiles.audio || [];
-            if (audioFiles.length > 0) {
-              navigation.navigate('AudioPlayer', {
-                track: audioFiles[0],
-                playlist: audioFiles,
-              });
-            }
-          }}
-        />
-      )}
+      <MiniPlayer navigation={navigation} />
     </SafeAreaView>
   );
 };
