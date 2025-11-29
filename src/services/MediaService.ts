@@ -1,23 +1,46 @@
+// src/services/MediaService.ts
 import RNFS from 'react-native-fs';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DatabaseService from './DatabaseService';
+import type { MediaFile } from '../types';
 
-const CACHE_EXPIRY_HOURS = 24; // Caché válido por 24 horas
+const CACHE_EXPIRY_HOURS = 24;
 const CACHE_TIMESTAMP_KEY = '@vibebox_cache_timestamp';
 
+interface MediaScanResult {
+  audio: MediaFile[];
+  video: MediaFile[];
+}
+
+interface CacheStats {
+  totalFiles: number;
+  audioFiles: number;
+  videoFiles: number;
+  cacheDate: Date | null;
+  isValid: boolean;
+}
+
+interface FileItem {
+  path: string;
+  name: string;
+  size: number;
+  isDirectory: () => boolean;
+  isFile: () => boolean;
+}
+
 class MediaService {
-  audioExtensions = ['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg'];
-  videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv'];
-  customPaths = [];
-  STORAGE_KEY = '@vibebox_custom_paths';
-  isScanning = false; // Flag para evitar escaneos múltiples
+  private audioExtensions = ['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg'];
+  private videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv'];
+  private customPaths: string[] = [];
+  private readonly STORAGE_KEY = '@vibebox_custom_paths';
+  private isScanning = false;
 
   constructor() {
     this.loadCustomPaths();
   }
 
-  async loadCustomPaths() {
+  private async loadCustomPaths(): Promise<void> {
     try {
       const storedPaths = await AsyncStorage.getItem(this.STORAGE_KEY);
       if (storedPaths) {
@@ -28,7 +51,7 @@ class MediaService {
     }
   }
 
-  async saveCustomPaths() {
+  private async saveCustomPaths(): Promise<void> {
     try {
       await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.customPaths));
     } catch (error) {
@@ -36,7 +59,7 @@ class MediaService {
     }
   }
 
-  async addCustomPath(path) {
+  async addCustomPath(path: string): Promise<boolean> {
     if (!this.customPaths.includes(path)) {
       this.customPaths.push(path);
       await this.saveCustomPaths();
@@ -45,7 +68,7 @@ class MediaService {
     return false;
   }
 
-  async removeCustomPath(path) {
+  async removeCustomPath(path: string): Promise<boolean> {
     const initialLength = this.customPaths.length;
     this.customPaths = this.customPaths.filter(p => p !== path);
     if (this.customPaths.length !== initialLength) {
@@ -55,8 +78,8 @@ class MediaService {
     return false;
   }
 
-  getMediaPaths() {
-    let paths = [];
+  private getMediaPaths(): string[] {
+    let paths: string[] = [];
 
     if (Platform.OS === 'android') {
       paths = [
@@ -75,16 +98,13 @@ class MediaService {
     return [...paths, ...this.customPaths];
   }
 
-  /**
-   * Verifica si el caché es válido
-   */
-  async isCacheValid() {
+  private async isCacheValid(): Promise<boolean> {
     try {
       const timestamp = await AsyncStorage.getItem(CACHE_TIMESTAMP_KEY);
       if (!timestamp) return false;
 
       const cacheAge = Date.now() - parseInt(timestamp);
-      const maxAge = CACHE_EXPIRY_HOURS * 60 * 60 * 1000; // Convertir a ms
+      const maxAge = CACHE_EXPIRY_HOURS * 60 * 60 * 1000;
 
       return cacheAge < maxAge;
     } catch (error) {
@@ -93,10 +113,7 @@ class MediaService {
     }
   }
 
-  /**
-   * Actualiza el timestamp del caché
-   */
-  async updateCacheTimestamp() {
+  private async updateCacheTimestamp(): Promise<void> {
     try {
       await AsyncStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
     } catch (error) {
@@ -104,12 +121,8 @@ class MediaService {
     }
   }
 
-  /**
-   * Método principal para escanear archivos
-   */
-  async scanMediaFiles(forceRescan = false) {
+  async scanMediaFiles(forceRescan = false): Promise<MediaScanResult> {
     try {
-      // Verificar si el caché es válido y no se fuerza el reescaneo
       if (!forceRescan) {
         const cacheValid = await this.isCacheValid();
 
@@ -124,14 +137,12 @@ class MediaService {
               const audio = cachedFiles.filter(f => f.type === 'audio');
               const video = cachedFiles.filter(f => f.type === 'video');
 
-              // Opcionalmente, escanear en background después de 5 segundos
               setTimeout(() => this.smartBackgroundScan(), 5000);
 
               return { audio, video };
             }
           } catch (dbError) {
             console.error('❌ Database error, forcing rescan:', dbError);
-            // Si hay error en la DB, hacer scan completo
             forceRescan = true;
           }
         } else {
@@ -139,20 +150,15 @@ class MediaService {
         }
       }
 
-      // Si no hay caché válido o se fuerza, hacer scan completo
       console.log('🔍 Performing full scan...');
       return await this.performFullScan();
-
     } catch (error) {
       console.error('Error scanning media files:', error);
       return { audio: [], video: [] };
     }
   }
 
-  /**
-   * Escaneo inteligente en background que solo actualiza si detecta cambios
-   */
-  async smartBackgroundScan() {
+  private async smartBackgroundScan(): Promise<void> {
     if (this.isScanning) {
       console.log('⏭️ Scan already in progress, skipping');
       return;
@@ -163,16 +169,13 @@ class MediaService {
     try {
       console.log('🔄 Starting smart background scan...');
 
-      // Obtener archivos actuales del caché
       const cachedFiles = await DatabaseService.getMediaFiles();
       const cachedCount = cachedFiles.length;
 
-      // Hacer un escaneo rápido contando archivos
       const quickCount = await this.quickScanCount();
 
-      // Solo hacer scan completo si hay diferencia significativa (>5%)
       const difference = Math.abs(quickCount - cachedCount);
-      const threshold = cachedCount * 0.05; // 5% de cambio
+      const threshold = cachedCount * 0.05;
 
       if (difference > threshold) {
         console.log(`📊 Detected ${difference} file changes, updating...`);
@@ -180,7 +183,6 @@ class MediaService {
       } else {
         console.log('✅ No significant changes detected');
       }
-
     } catch (error) {
       console.error('Background scan failed:', error);
     } finally {
@@ -188,10 +190,7 @@ class MediaService {
     }
   }
 
-  /**
-   * Conteo rápido de archivos sin crear objetos completos
-   */
-  async quickScanCount() {
+  private async quickScanCount(): Promise<number> {
     let count = 0;
     const paths = this.getMediaPaths();
 
@@ -199,20 +198,21 @@ class MediaService {
       try {
         const exists = await RNFS.exists(path);
         if (exists) {
-          count += await this.countFilesInDirectory(path, 0, 2); // Solo 2 niveles
+          count += await this.countFilesInDirectory(path, 0, 2);
         }
       } catch (error) {
-        // Ignorar errores en conteo rápido
+        // Ignorar errores
       }
     }
 
     return count;
   }
 
-  /**
-   * Cuenta archivos multimedia sin crear objetos
-   */
-  async countFilesInDirectory(directoryPath, depth = 0, maxDepth = 2) {
+  private async countFilesInDirectory(
+    directoryPath: string,
+    depth = 0,
+    maxDepth = 2
+  ): Promise<number> {
     if (depth > maxDepth) return 0;
 
     let count = 0;
@@ -237,18 +237,14 @@ class MediaService {
     return count;
   }
 
-  /**
-   * Escaneo completo del sistema
-   */
-  async performFullScan() {
+  private async performFullScan(): Promise<MediaScanResult> {
     const startTime = Date.now();
     await this.loadCustomPaths();
     const paths = this.getMediaPaths();
-    const allMedia = { audio: [], video: [] };
+    const allMedia: MediaScanResult = { audio: [], video: [] };
 
     console.log(`🔍 Scanning ${paths.length} paths...`);
 
-    // Escanear cada ruta en paralelo para mayor velocidad
     const scanPromises = paths.map(async (path) => {
       try {
         const exists = await RNFS.exists(path);
@@ -263,19 +259,16 @@ class MediaService {
 
     const results = await Promise.all(scanPromises);
 
-    // Combinar resultados
     results.forEach(result => {
       allMedia.audio.push(...result.audio);
       allMedia.video.push(...result.video);
     });
 
-    // Eliminar duplicados
     allMedia.audio = this.removeDuplicates(allMedia.audio);
     allMedia.video = this.removeDuplicates(allMedia.video);
 
     console.log(`✅ Found ${allMedia.audio.length} audio, ${allMedia.video.length} video files`);
 
-    // Guardar en DB y actualizar timestamp
     const allFiles = [...allMedia.audio, ...allMedia.video];
     await DatabaseService.saveMediaFiles(allFiles);
     await this.updateCacheTimestamp();
@@ -286,11 +279,8 @@ class MediaService {
     return allMedia;
   }
 
-  /**
-   * Elimina duplicados basándose en la ruta
-   */
-  removeDuplicates(mediaArray) {
-    const seen = new Map();
+  private removeDuplicates(mediaArray: MediaFile[]): MediaFile[] {
+    const seen = new Map<string, boolean>();
     return mediaArray.filter(item => {
       if (seen.has(item.path)) {
         return false;
@@ -300,77 +290,73 @@ class MediaService {
     });
   }
 
-  /**
-   * Escanea un directorio recursivamente
-   */
-  async scanDirectory(directoryPath, depth = 0, maxDepth = 3) {
-    const media = { audio: [], video: [] };
+  private async scanDirectory(
+    directoryPath: string,
+    depth = 0,
+    maxDepth = 3
+  ): Promise<MediaScanResult> {
+    const media: MediaScanResult = { audio: [], video: [] };
 
     if (depth > maxDepth) return media;
 
     try {
       const items = await RNFS.readDir(directoryPath);
 
-      // Procesar directorios y archivos por separado
-      const directories = [];
-      const files = [];
+      const directories: FileItem[] = [];
+      const files: FileItem[] = [];
 
       items.forEach(item => {
         if (item.isDirectory()) {
-          // Filtrar carpetas del sistema
           if (!item.name.startsWith('.') &&
             !item.name.startsWith('Android') &&
             item.name !== 'cache' &&
             item.name !== 'Cache') {
-            directories.push(item);
+            directories.push(item as unknown as FileItem);
           }
         } else if (item.isFile()) {
-          files.push(item);
+          files.push(item as unknown as FileItem);
         }
       });
 
-      // Procesar archivos del directorio actual
       files.forEach(item => {
         const extension = item.name.substring(item.name.lastIndexOf('.')).toLowerCase();
 
         if (this.audioExtensions.includes(extension)) {
           media.audio.push({
             id: item.path,
-            name: item.name.replace(extension, ''),
+            filename: item.name.replace(extension, ''),
             path: item.path,
             size: item.size,
-            extension: extension,
             type: 'audio',
-            uri: Platform.OS === 'android' ? `file://${item.path}` : item.path,
+            dateAdded: Date.now(),
+            lastModified: Date.now(),
           });
         } else if (this.videoExtensions.includes(extension)) {
           media.video.push({
             id: item.path,
-            name: item.name.replace(extension, ''),
+            filename: item.name.replace(extension, ''),
             path: item.path,
             size: item.size,
-            extension: extension,
             type: 'video',
-            uri: Platform.OS === 'android' ? `file://${item.path}` : item.path,
+            dateAdded: Date.now(),
+            lastModified: Date.now(),
           });
         }
       });
 
-      // Escanear subdirectorios recursivamente
       for (const dir of directories) {
         const subMedia = await this.scanDirectory(dir.path, depth + 1, maxDepth);
         media.audio.push(...subMedia.audio);
         media.video.push(...subMedia.video);
       }
-
     } catch (error) {
-      // Silenciosamente ignorar errores de permisos
+      // Ignorar errores de permisos
     }
 
     return media;
   }
 
-  formatFileSize(bytes) {
+  formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -378,29 +364,7 @@ class MediaService {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 
-  groupMediaByFolder(mediaArray) {
-    const grouped = {};
-
-    mediaArray.forEach(item => {
-      const parentPath = item.path.substring(0, item.path.lastIndexOf('/'));
-      const folderName = parentPath.substring(parentPath.lastIndexOf('/') + 1);
-
-      if (!grouped[folderName]) {
-        grouped[folderName] = [];
-      }
-      grouped[folderName].push(item);
-    });
-
-    return Object.keys(grouped).map(folderName => ({
-      title: folderName,
-      data: grouped[folderName],
-    }));
-  }
-
-  /**
-   * Limpia el caché forzando un nuevo escaneo en la próxima carga
-   */
-  async clearCache() {
+  async clearCache(): Promise<void> {
     try {
       await DatabaseService.clearCache();
       await AsyncStorage.removeItem(CACHE_TIMESTAMP_KEY);
@@ -410,10 +374,7 @@ class MediaService {
     }
   }
 
-  /**
-   * Obtiene estadísticas del caché
-   */
-  async getCacheStats() {
+  async getCacheStats(): Promise<CacheStats | null> {
     try {
       const files = await DatabaseService.getMediaFiles();
       const timestamp = await AsyncStorage.getItem(CACHE_TIMESTAMP_KEY);

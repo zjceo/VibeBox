@@ -1,20 +1,32 @@
-import SQLite from 'react-native-sqlite-storage';
+// src/services/DatabaseService.ts
+import SQLite, { SQLiteDatabase, ResultSet } from 'react-native-sqlite-storage';
+import type { MediaFile, DatabaseStats } from '../types';
 
 SQLite.enablePromise(true);
 
 const database_name = "VibeBox.db";
-const database_version = "2.0"; // Incrementar versión para migración
+const database_version = "2.0";
 const database_displayname = "VibeBox Database";
 const database_size = 200000;
 
-class DatabaseService {
-    constructor() {
-        this.db = null;
-        this.initPromise = null;
-        this.currentVersion = 2; // Versión actual del esquema
-    }
+interface DbMediaFile {
+    id: string;
+    path: string;
+    name: string;
+    size: number;
+    duration: string;
+    type: 'audio' | 'video';
+    extension: string;
+    created_at: number;
+    updated_at: number;
+}
 
-    async init() {
+class DatabaseService {
+    private db: SQLiteDatabase | null = null;
+    private initPromise: Promise<void> | null = null;
+    private currentVersion = 2;
+
+    async init(): Promise<void> {
         if (this.initPromise) return this.initPromise;
 
         this.initPromise = new Promise(async (resolve, reject) => {
@@ -26,9 +38,7 @@ class DatabaseService {
                     database_size
                 );
 
-                // Verificar versión y migrar si es necesario
                 await this.checkAndMigrate();
-
                 await this.createTables();
                 console.log("✅ Database initialized successfully");
                 resolve();
@@ -41,9 +51,10 @@ class DatabaseService {
         return this.initPromise;
     }
 
-    async checkAndMigrate() {
+    private async checkAndMigrate(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
         try {
-            // Verificar si existe la tabla de versión
             const [versionCheck] = await this.db.executeSql(`
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name='db_version';
@@ -52,7 +63,6 @@ class DatabaseService {
             let currentDbVersion = 1;
 
             if (versionCheck.rows.length === 0) {
-                // Primera vez o versión antigua - crear tabla de versión
                 await this.db.executeSql(`
           CREATE TABLE IF NOT EXISTS db_version (
             version INTEGER PRIMARY KEY
@@ -60,7 +70,6 @@ class DatabaseService {
         `);
                 await this.db.executeSql(`INSERT INTO db_version (version) VALUES (1);`);
             } else {
-                // Obtener versión actual
                 const [versionResult] = await this.db.executeSql(`SELECT version FROM db_version;`);
                 if (versionResult.rows.length > 0) {
                     currentDbVersion = versionResult.rows.item(0).version;
@@ -69,19 +78,18 @@ class DatabaseService {
 
             console.log(`📊 Current DB version: ${currentDbVersion}, Target: ${this.currentVersion}`);
 
-            // Ejecutar migraciones necesarias
             if (currentDbVersion < this.currentVersion) {
                 await this.migrate(currentDbVersion, this.currentVersion);
             }
-
         } catch (error) {
             console.error("❌ Error checking/migrating database:", error);
-            // Si hay error, intentar recrear desde cero
             await this.recreateDatabase();
         }
     }
 
-    async migrate(fromVersion, toVersion) {
+    private async migrate(fromVersion: number, toVersion: number): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
         console.log(`🔄 Migrating database from v${fromVersion} to v${toVersion}...`);
 
         try {
@@ -89,21 +97,20 @@ class DatabaseService {
                 await this.migrateV1ToV2();
             }
 
-            // Actualizar versión
             await this.db.executeSql(`UPDATE db_version SET version = ?;`, [toVersion]);
             console.log(`✅ Migration completed to v${toVersion}`);
-
         } catch (error) {
             console.error("❌ Migration failed:", error);
             throw error;
         }
     }
 
-    async migrateV1ToV2() {
+    private async migrateV1ToV2(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
         console.log("🔄 Migrating v1 -> v2: Adding updated_at column...");
 
         try {
-            // Verificar si la columna updated_at ya existe
             const [columnCheck] = await this.db.executeSql(`PRAGMA table_info(media_files);`);
             let hasUpdatedAt = false;
 
@@ -116,13 +123,11 @@ class DatabaseService {
             }
 
             if (!hasUpdatedAt) {
-                // Agregar columna updated_at
                 await this.db.executeSql(`
           ALTER TABLE media_files 
           ADD COLUMN updated_at INTEGER DEFAULT 0;
         `);
 
-                // Actualizar valores existentes con created_at
                 await this.db.executeSql(`
           UPDATE media_files 
           SET updated_at = created_at 
@@ -133,24 +138,23 @@ class DatabaseService {
             } else {
                 console.log("ℹ️ Column updated_at already exists, skipping");
             }
-
         } catch (error) {
             console.error("❌ Error in v1->v2 migration:", error);
             throw error;
         }
     }
 
-    async recreateDatabase() {
+    private async recreateDatabase(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
         console.log("🔨 Recreating database from scratch...");
 
         try {
-            // Eliminar todas las tablas
             await this.db.executeSql(`DROP TABLE IF EXISTS media_files;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS folders;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS cache_metadata;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS db_version;`);
 
-            // Crear tabla de versión
             await this.db.executeSql(`
         CREATE TABLE db_version (
           version INTEGER PRIMARY KEY
@@ -165,11 +169,10 @@ class DatabaseService {
         }
     }
 
-    async createTables() {
+    private async createTables(): Promise<void> {
         if (!this.db) return;
 
         try {
-            // Tabla de archivos multimedia con índices optimizados
             await this.db.executeSql(`
         CREATE TABLE IF NOT EXISTS media_files (
           id TEXT PRIMARY KEY,
@@ -184,7 +187,6 @@ class DatabaseService {
         );
       `);
 
-            // Índices para búsqueda rápida
             await this.db.executeSql(`
         CREATE INDEX IF NOT EXISTS idx_media_type 
         ON media_files (type);
@@ -195,7 +197,6 @@ class DatabaseService {
         ON media_files (name);
       `);
 
-            // Solo crear índice updated_at si la columna existe
             try {
                 await this.db.executeSql(`
           CREATE INDEX IF NOT EXISTS idx_media_updated 
@@ -205,7 +206,6 @@ class DatabaseService {
                 console.log("ℹ️ Skipping updated_at index (column may not exist yet)");
             }
 
-            // Tabla de carpetas personalizadas
             await this.db.executeSql(`
         CREATE TABLE IF NOT EXISTS folders (
           path TEXT PRIMARY KEY,
@@ -214,7 +214,6 @@ class DatabaseService {
         );
       `);
 
-            // Tabla de metadatos del caché
             await this.db.executeSql(`
         CREATE TABLE IF NOT EXISTS cache_metadata (
           key TEXT PRIMARY KEY,
@@ -230,19 +229,27 @@ class DatabaseService {
         }
     }
 
-    /**
-     * Obtiene todos los archivos multimedia (optimizado)
-     */
-    async getMediaFiles() {
+    async getMediaFiles(): Promise<MediaFile[]> {
         await this.init();
+        if (!this.db) return [];
+
         try {
             const [results] = await this.db.executeSql(
                 `SELECT * FROM media_files ORDER BY name ASC`
             );
 
-            const files = [];
+            const files: MediaFile[] = [];
             for (let i = 0; i < results.rows.length; i++) {
-                files.push(results.rows.item(i));
+                const item = results.rows.item(i) as DbMediaFile;
+                files.push({
+                    id: item.id,
+                    filename: item.name,
+                    path: item.path,
+                    type: item.type,
+                    size: item.size,
+                    dateAdded: item.created_at,
+                    lastModified: item.updated_at,
+                });
             }
 
             console.log(`📁 Loaded ${files.length} files from database`);
@@ -253,20 +260,28 @@ class DatabaseService {
         }
     }
 
-    /**
-     * Obtiene archivos por tipo (más rápido que filtrar después)
-     */
-    async getMediaFilesByType(type) {
+    async getMediaFilesByType(type: 'audio' | 'video'): Promise<MediaFile[]> {
         await this.init();
+        if (!this.db) return [];
+
         try {
             const [results] = await this.db.executeSql(
                 `SELECT * FROM media_files WHERE type = ? ORDER BY name ASC`,
                 [type]
             );
 
-            const files = [];
+            const files: MediaFile[] = [];
             for (let i = 0; i < results.rows.length; i++) {
-                files.push(results.rows.item(i));
+                const item = results.rows.item(i) as DbMediaFile;
+                files.push({
+                    id: item.id,
+                    filename: item.name,
+                    path: item.path,
+                    type: item.type,
+                    size: item.size,
+                    dateAdded: item.created_at,
+                    lastModified: item.updated_at,
+                });
             }
 
             return files;
@@ -276,31 +291,25 @@ class DatabaseService {
         }
     }
 
-    /**
-     * Guarda archivos de forma optimizada con transacción por lotes
-     */
-    async saveMediaFiles(files) {
+    async saveMediaFiles(files: MediaFile[]): Promise<void> {
         await this.init();
-        if (!files || files.length === 0) return;
+        if (!this.db || !files || files.length === 0) return;
 
-        const BATCH_SIZE = 100; // Procesar en lotes de 100
+        const BATCH_SIZE = 100;
         const totalBatches = Math.ceil(files.length / BATCH_SIZE);
 
         try {
             console.log(`💾 Saving ${files.length} files in ${totalBatches} batches...`);
             const startTime = Date.now();
 
-            // Limpiar tabla existente de forma eficiente
             await this.db.executeSql('DELETE FROM media_files');
 
-            // Procesar en lotes
             for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
                 const start = batchIndex * BATCH_SIZE;
                 const end = Math.min(start + BATCH_SIZE, files.length);
                 const batch = files.slice(start, end);
 
                 await this.db.transaction(async (tx) => {
-                    // Preparar todos los inserts del lote
                     const promises = batch.map(file =>
                         tx.executeSql(
                             `INSERT OR REPLACE INTO media_files 
@@ -309,12 +318,12 @@ class DatabaseService {
                             [
                                 file.id,
                                 file.path,
-                                file.name,
+                                file.filename,
                                 file.size || 0,
-                                file.duration || '',
+                                file.duration?.toString() || '',
                                 file.type,
-                                file.extension,
-                                file.created_at || Date.now(),
+                                '',
+                                file.dateAdded || Date.now(),
                                 Date.now()
                             ]
                         )
@@ -323,7 +332,6 @@ class DatabaseService {
                     await Promise.all(promises);
                 });
 
-                // Log de progreso
                 if (batchIndex % 5 === 0 || batchIndex === totalBatches - 1) {
                     const progress = ((batchIndex + 1) / totalBatches * 100).toFixed(0);
                     console.log(`💾 Progress: ${progress}% (${end}/${files.length} files)`);
@@ -332,160 +340,16 @@ class DatabaseService {
 
             const saveTime = ((Date.now() - startTime) / 1000).toFixed(2);
             console.log(`✅ Saved ${files.length} files in ${saveTime}s`);
-
         } catch (error) {
             console.error("❌ Error saving media files:", error);
             throw error;
         }
     }
 
-    /**
-     * Actualiza un archivo específico (para cambios incrementales)
-     */
-    async updateMediaFile(file) {
+    async clearCache(): Promise<void> {
         await this.init();
-        try {
-            await this.db.executeSql(
-                `INSERT OR REPLACE INTO media_files 
-        (id, path, name, size, duration, type, extension, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    file.id,
-                    file.path,
-                    file.name,
-                    file.size || 0,
-                    file.duration || '',
-                    file.type,
-                    file.extension,
-                    file.created_at || Date.now(),
-                    Date.now()
-                ]
-            );
-        } catch (error) {
-            console.error("❌ Error updating media file:", error);
-        }
-    }
+        if (!this.db) return;
 
-    /**
-     * Elimina un archivo específico
-     */
-    async deleteMediaFile(id) {
-        await this.init();
-        try {
-            await this.db.executeSql(
-                `DELETE FROM media_files WHERE id = ?`,
-                [id]
-            );
-        } catch (error) {
-            console.error("❌ Error deleting media file:", error);
-        }
-    }
-
-    /**
-     * Cuenta archivos por tipo
-     */
-    async countMediaFilesByType(type) {
-        await this.init();
-        try {
-            const [results] = await this.db.executeSql(
-                `SELECT COUNT(*) as count FROM media_files WHERE type = ?`,
-                [type]
-            );
-            return results.rows.item(0).count;
-        } catch (error) {
-            console.error("❌ Error counting files:", error);
-            return 0;
-        }
-    }
-
-    /**
-     * Obtiene carpetas
-     */
-    async getFolders() {
-        await this.init();
-        try {
-            const [results] = await this.db.executeSql(`SELECT * FROM folders`);
-            const folders = [];
-            for (let i = 0; i < results.rows.length; i++) {
-                folders.push(results.rows.item(i));
-            }
-            return folders;
-        } catch (error) {
-            console.error("❌ Error getting folders:", error);
-            return [];
-        }
-    }
-
-    /**
-     * Guarda una carpeta
-     */
-    async saveFolder(path, isCustom = false) {
-        await this.init();
-        try {
-            await this.db.executeSql(
-                `INSERT OR REPLACE INTO folders (path, is_custom, created_at) 
-        VALUES (?, ?, ?)`,
-                [path, isCustom ? 1 : 0, Date.now()]
-            );
-        } catch (error) {
-            console.error("❌ Error saving folder:", error);
-        }
-    }
-
-    /**
-     * Elimina una carpeta
-     */
-    async removeFolder(path) {
-        await this.init();
-        try {
-            await this.db.executeSql(`DELETE FROM folders WHERE path = ?`, [path]);
-        } catch (error) {
-            console.error("❌ Error removing folder:", error);
-        }
-    }
-
-    /**
-     * Guarda metadato del caché
-     */
-    async setCacheMetadata(key, value) {
-        await this.init();
-        try {
-            await this.db.executeSql(
-                `INSERT OR REPLACE INTO cache_metadata (key, value, updated_at) 
-        VALUES (?, ?, ?)`,
-                [key, JSON.stringify(value), Date.now()]
-            );
-        } catch (error) {
-            console.error("❌ Error setting cache metadata:", error);
-        }
-    }
-
-    /**
-     * Obtiene metadato del caché
-     */
-    async getCacheMetadata(key) {
-        await this.init();
-        try {
-            const [results] = await this.db.executeSql(
-                `SELECT value FROM cache_metadata WHERE key = ?`,
-                [key]
-            );
-
-            if (results.rows.length > 0) {
-                return JSON.parse(results.rows.item(0).value);
-            }
-            return null;
-        } catch (error) {
-            console.error("❌ Error getting cache metadata:", error);
-            return null;
-        }
-    }
-
-    /**
-     * Limpia la caché de forma eficiente
-     */
-    async clearCache() {
-        await this.init();
         try {
             await this.db.transaction(async (tx) => {
                 await tx.executeSql('DELETE FROM media_files');
@@ -497,41 +361,19 @@ class DatabaseService {
         }
     }
 
-    /**
-     * Resetea completamente la base de datos (útil para debug)
-     */
-    async resetDatabase() {
-        try {
-            console.log("🔨 Resetting database...");
-
-            if (this.db) {
-                await this.db.close();
-                this.db = null;
-                this.initPromise = null;
-            }
-
-            // Eliminar el archivo de la base de datos
-            await SQLite.deleteDatabase({
-                name: database_name,
-                location: 'default',
-            });
-
-            console.log("✅ Database reset completed. Reinitializing...");
-
-            // Reinicializar
-            await this.init();
-
-        } catch (error) {
-            console.error("❌ Error resetting database:", error);
-            throw error;
-        }
-    }
-
-    /**
-     * Obtiene estadísticas de la base de datos
-     */
-    async getDatabaseStats() {
+    async getDatabaseStats(): Promise<DatabaseStats> {
         await this.init();
+        if (!this.db) {
+            return {
+                totalRecords: 0,
+                audioCount: 0,
+                videoCount: 0,
+                databaseSize: 0,
+                lastUpdate: 0,
+                version: this.currentVersion,
+            };
+        }
+
         try {
             const [totalResult] = await this.db.executeSql(
                 `SELECT COUNT(*) as total FROM media_files`
@@ -544,21 +386,30 @@ class DatabaseService {
             );
 
             return {
-                total: totalResult.rows.item(0).total,
-                audio: audioResult.rows.item(0).count,
-                video: videoResult.rows.item(0).count,
+                totalRecords: totalResult.rows.item(0).total,
+                audioCount: audioResult.rows.item(0).count,
+                videoCount: videoResult.rows.item(0).count,
+                databaseSize: 0,
+                lastUpdate: Date.now(),
+                version: this.currentVersion,
             };
         } catch (error) {
             console.error("❌ Error getting database stats:", error);
-            return { total: 0, audio: 0, video: 0 };
+            return {
+                totalRecords: 0,
+                audioCount: 0,
+                videoCount: 0,
+                databaseSize: 0,
+                lastUpdate: 0,
+                version: this.currentVersion,
+            };
         }
     }
 
-    /**
-     * Busca archivos por nombre
-     */
-    async searchFiles(query) {
+    async searchFiles(query: string): Promise<MediaFile[]> {
         await this.init();
+        if (!this.db) return [];
+
         try {
             const [results] = await this.db.executeSql(
                 `SELECT * FROM media_files 
@@ -568,9 +419,18 @@ class DatabaseService {
                 [`%${query}%`]
             );
 
-            const files = [];
+            const files: MediaFile[] = [];
             for (let i = 0; i < results.rows.length; i++) {
-                files.push(results.rows.item(i));
+                const item = results.rows.item(i) as DbMediaFile;
+                files.push({
+                    id: item.id,
+                    filename: item.name,
+                    path: item.path,
+                    type: item.type,
+                    size: item.size,
+                    dateAdded: item.created_at,
+                    lastModified: item.updated_at,
+                });
             }
             return files;
         } catch (error) {
@@ -579,18 +439,26 @@ class DatabaseService {
         }
     }
 
-    /**
-     * Optimiza la base de datos (ejecutar periódicamente)
-     */
-    async optimizeDatabase() {
-        await this.init();
+    async resetDatabase(): Promise<void> {
         try {
-            console.log("🔧 Optimizing database...");
-            await this.db.executeSql('VACUUM');
-            await this.db.executeSql('ANALYZE');
-            console.log("✅ Database optimized");
+            console.log("🔨 Resetting database...");
+
+            if (this.db) {
+                await this.db.close();
+                this.db = null;
+                this.initPromise = null;
+            }
+
+            await SQLite.deleteDatabase({
+                name: database_name,
+                location: 'default',
+            });
+
+            console.log("✅ Database reset completed. Reinitializing...");
+            await this.init();
         } catch (error) {
-            console.error("❌ Error optimizing database:", error);
+            console.error("❌ Error resetting database:", error);
+            throw error;
         }
     }
 }

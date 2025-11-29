@@ -1,34 +1,42 @@
+// src/services/AudioPlayerService.ts
 import TrackPlayer, {
   Capability,
   AppKilledPlaybackBehavior,
   RepeatMode,
   State,
+  Track,
+  Progress,
 } from 'react-native-track-player';
 
-class AudioPlayerService {
-  constructor() {
-    this.isInitialized = false;
-  }
+interface AudioTrack {
+  id: string;
+  uri: string;
+  name?: string;
+  artist?: string;
+  album?: string;
+  artwork?: string;
+  duration?: number;
+}
 
-  async initialize() {
+class AudioPlayerService {
+  private isInitialized = false;
+
+  async initialize(): Promise<void> {
     if (this.isInitialized) {
       console.log('TrackPlayer already initialized, skipping...');
       return;
     }
 
     try {
-      // Verificar si ya está inicializado
-      const state = await TrackPlayer.getState();
+      const state = await TrackPlayer.getPlaybackState();
 
-      // Si ya está inicializado, solo actualizar opciones
-      if (state !== State.None) {
+      if (state.state !== State.None) {
         console.log('TrackPlayer was already initialized, updating options...');
         await this.updatePlayerOptions();
         this.isInitialized = true;
         return;
       }
     } catch (error) {
-      // Si falla getState, significa que no está inicializado
       console.log('TrackPlayer not initialized yet, setting up...');
     }
 
@@ -41,8 +49,7 @@ class AudioPlayerService {
 
       this.isInitialized = true;
       console.log('TrackPlayer initialized successfully');
-    } catch (error) {
-      // Si el error es que ya está inicializado, no es un problema
+    } catch (error: any) {
       if (error.message?.includes('already been initialized')) {
         console.log('TrackPlayer was already initialized by another instance');
         await this.updatePlayerOptions();
@@ -54,16 +61,13 @@ class AudioPlayerService {
     }
   }
 
-  async updatePlayerOptions() {
+  private async updatePlayerOptions(): Promise<void> {
     try {
-      // Configurar capacidades del reproductor
       await TrackPlayer.updateOptions({
-        // Comportamiento cuando la app se cierra
         android: {
           appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
         },
 
-        // Capacidades (botones que aparecen en la notificación)
         capabilities: [
           Capability.Play,
           Capability.Pause,
@@ -73,34 +77,25 @@ class AudioPlayerService {
           Capability.Stop,
         ],
 
-        // Capacidades compactas (las que aparecen siempre)
         compactCapabilities: [
           Capability.Play,
           Capability.Pause,
           Capability.SkipToNext,
         ],
 
-        // Configuración de la notificación
         notificationCapabilities: [
           Capability.Play,
           Capability.Pause,
           Capability.SkipToNext,
           Capability.SkipToPrevious,
         ],
-
-        // Iconos personalizados (opcionales - comenta si no los tienes)
-        // playIcon: require('../assets/icons/play.png'),
-        // pauseIcon: require('../assets/icons/pause.png'),
-        // stopIcon: require('../assets/icons/stop.png'),
-        // previousIcon: require('../assets/icons/previous.png'),
-        // nextIcon: require('../assets/icons/next.png'),
       });
     } catch (error) {
       console.error('Error updating player options:', error);
     }
   }
 
-  async reset() {
+  async reset(): Promise<void> {
     try {
       await TrackPlayer.reset();
     } catch (error) {
@@ -108,7 +103,7 @@ class AudioPlayerService {
     }
   }
 
-  async addTrack(track) {
+  async addTrack(track: AudioTrack): Promise<void> {
     try {
       await TrackPlayer.add({
         id: track.id,
@@ -125,10 +120,9 @@ class AudioPlayerService {
     }
   }
 
-  async addTracks(tracks) {
+  async addTracks(tracks: AudioTrack[]): Promise<void> {
     try {
-      // Formatear tracks para TrackPlayer
-      const formattedTracks = tracks.map(track => ({
+      const formattedTracks: Track[] = tracks.map(track => ({
         id: track.id,
         url: track.uri,
         title: track.name || 'Sin título',
@@ -145,7 +139,7 @@ class AudioPlayerService {
     }
   }
 
-  async play() {
+  async play(): Promise<void> {
     try {
       await TrackPlayer.play();
     } catch (error) {
@@ -153,7 +147,7 @@ class AudioPlayerService {
     }
   }
 
-  async pause() {
+  async pause(): Promise<void> {
     try {
       await TrackPlayer.pause();
     } catch (error) {
@@ -161,7 +155,7 @@ class AudioPlayerService {
     }
   }
 
-  async skipToNext() {
+  async skipToNext(): Promise<void> {
     try {
       await TrackPlayer.skipToNext();
     } catch (error) {
@@ -169,7 +163,7 @@ class AudioPlayerService {
     }
   }
 
-  async skipToPrevious() {
+  async skipToPrevious(): Promise<void> {
     try {
       await TrackPlayer.skipToPrevious();
     } catch (error) {
@@ -177,7 +171,7 @@ class AudioPlayerService {
     }
   }
 
-  async seekTo(position) {
+  async seekTo(position: number): Promise<void> {
     try {
       await TrackPlayer.seekTo(position);
     } catch (error) {
@@ -185,7 +179,7 @@ class AudioPlayerService {
     }
   }
 
-  async getProgress() {
+  async getProgress(): Promise<Progress> {
     try {
       return await TrackPlayer.getProgress();
     } catch (error) {
@@ -194,16 +188,17 @@ class AudioPlayerService {
     }
   }
 
-  async getState() {
+  async getState(): Promise<State> {
     try {
-      return await TrackPlayer.getState();
+      const state = await TrackPlayer.getPlaybackState();
+      return state.state;
     } catch (error) {
       console.error('Error getting state:', error);
       return State.None;
     }
   }
 
-  async setRepeatMode(mode) {
+  async setRepeatMode(mode: RepeatMode): Promise<void> {
     try {
       await TrackPlayer.setRepeatMode(mode);
     } catch (error) {
@@ -211,7 +206,7 @@ class AudioPlayerService {
     }
   }
 
-  async getCurrentTrack() {
+  async getCurrentTrack(): Promise<Track | null> {
     try {
       const trackIndex = await TrackPlayer.getActiveTrackIndex();
       if (trackIndex == null) return null;
@@ -224,7 +219,7 @@ class AudioPlayerService {
     }
   }
 
-  async getTrack(trackIndex) {
+  async getTrack(trackIndex: number): Promise<Track | null> {
     try {
       return await TrackPlayer.getTrack(trackIndex);
     } catch (error) {
@@ -233,7 +228,7 @@ class AudioPlayerService {
     }
   }
 
-  async getQueue() {
+  async getQueue(): Promise<Track[]> {
     try {
       return await TrackPlayer.getQueue();
     } catch (error) {
@@ -242,7 +237,7 @@ class AudioPlayerService {
     }
   }
 
-  async removeUpcomingTracks() {
+  async removeUpcomingTracks(): Promise<void> {
     try {
       await TrackPlayer.removeUpcomingTracks();
     } catch (error) {
