@@ -330,11 +330,11 @@ class MediaService {
             name: displayName, // Alias para compatibilidad
             title: displayName, // Alias para compatibilidad
             path: item.path, // Path completo con extensión para reproducir
+            extension: extension, // Guardar la extensión
             size: item.size,
             type: 'audio',
             dateAdded: Date.now(),
             lastModified: Date.now(),
-            extension,
           });
         } else if (this.videoExtensions.includes(extension)) {
           media.video.push({
@@ -343,6 +343,7 @@ class MediaService {
             name: displayName, // Alias para compatibilidad
             title: displayName, // Alias para compatibilidad
             path: item.path, // Path completo con extensión para reproducir
+            extension: extension, // Guardar la extensión
             size: item.size,
             type: 'video',
             dateAdded: Date.now(),

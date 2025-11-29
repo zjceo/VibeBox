@@ -1,5 +1,3 @@
-// src/types/media.ts
-
 /**
  * Tipo de archivo multimedia
  */
@@ -15,6 +13,7 @@ export interface MediaFile {
     title?: string;          // Alias para filename (compatibilidad)
     path: string;
     type: MediaType;
+    extension?: string;      // Extensión del archivo (.mp3, .mp4, etc)
     duration?: number;
     size: number;
     dateAdded: number;

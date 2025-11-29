@@ -291,6 +291,7 @@ class DatabaseService {
                     name: item.name,
                     title: item.title || item.name,
                     path: item.path,
+                    extension: item.extension,
                     type: item.type,
                     size: item.size,
                     dateAdded: item.created_at,
@@ -325,6 +326,7 @@ class DatabaseService {
                     name: item.name,
                     title: item.title || item.name,
                     path: item.path,
+                    extension: item.extension,
                     type: item.type,
                     size: item.size,
                     dateAdded: item.created_at,
@@ -371,7 +373,7 @@ class DatabaseService {
                                 file.size || 0,
                                 file.duration?.toString() || '',
                                 file.type,
-                                '',
+                                file.extension || '',
                                 file.dateAdded || Date.now(),
                                 Date.now()
                             ]
@@ -477,6 +479,7 @@ class DatabaseService {
                     name: item.name,
                     title: item.title || item.name,
                     path: item.path,
+                    extension: item.extension,
                     type: item.type,
                     size: item.size,
                     dateAdded: item.created_at,
