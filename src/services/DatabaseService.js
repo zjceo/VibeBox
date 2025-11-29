@@ -3,7 +3,7 @@ import SQLite from 'react-native-sqlite-storage';
 SQLite.enablePromise(true);
 
 const database_name = "VibeBox.db";
-const database_version = "1.0";
+const database_version = "2.0"; // Incrementar versión para migración
 const database_displayname = "VibeBox Database";
 const database_size = 200000;
 
@@ -11,6 +11,7 @@ class DatabaseService {
     constructor() {
         this.db = null;
         this.initPromise = null;
+        this.currentVersion = 2; // Versión actual del esquema
     }
 
     async init() {
@@ -25,6 +26,9 @@ class DatabaseService {
                     database_size
                 );
 
+                // Verificar versión y migrar si es necesario
+                await this.checkAndMigrate();
+
                 await this.createTables();
                 console.log("✅ Database initialized successfully");
                 resolve();
@@ -35,6 +39,130 @@ class DatabaseService {
         });
 
         return this.initPromise;
+    }
+
+    async checkAndMigrate() {
+        try {
+            // Verificar si existe la tabla de versión
+            const [versionCheck] = await this.db.executeSql(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='db_version';
+      `);
+
+            let currentDbVersion = 1;
+
+            if (versionCheck.rows.length === 0) {
+                // Primera vez o versión antigua - crear tabla de versión
+                await this.db.executeSql(`
+          CREATE TABLE IF NOT EXISTS db_version (
+            version INTEGER PRIMARY KEY
+          );
+        `);
+                await this.db.executeSql(`INSERT INTO db_version (version) VALUES (1);`);
+            } else {
+                // Obtener versión actual
+                const [versionResult] = await this.db.executeSql(`SELECT version FROM db_version;`);
+                if (versionResult.rows.length > 0) {
+                    currentDbVersion = versionResult.rows.item(0).version;
+                }
+            }
+
+            console.log(`📊 Current DB version: ${currentDbVersion}, Target: ${this.currentVersion}`);
+
+            // Ejecutar migraciones necesarias
+            if (currentDbVersion < this.currentVersion) {
+                await this.migrate(currentDbVersion, this.currentVersion);
+            }
+
+        } catch (error) {
+            console.error("❌ Error checking/migrating database:", error);
+            // Si hay error, intentar recrear desde cero
+            await this.recreateDatabase();
+        }
+    }
+
+    async migrate(fromVersion, toVersion) {
+        console.log(`🔄 Migrating database from v${fromVersion} to v${toVersion}...`);
+
+        try {
+            if (fromVersion === 1 && toVersion >= 2) {
+                await this.migrateV1ToV2();
+            }
+
+            // Actualizar versión
+            await this.db.executeSql(`UPDATE db_version SET version = ?;`, [toVersion]);
+            console.log(`✅ Migration completed to v${toVersion}`);
+
+        } catch (error) {
+            console.error("❌ Migration failed:", error);
+            throw error;
+        }
+    }
+
+    async migrateV1ToV2() {
+        console.log("🔄 Migrating v1 -> v2: Adding updated_at column...");
+
+        try {
+            // Verificar si la columna updated_at ya existe
+            const [columnCheck] = await this.db.executeSql(`PRAGMA table_info(media_files);`);
+            let hasUpdatedAt = false;
+
+            for (let i = 0; i < columnCheck.rows.length; i++) {
+                const column = columnCheck.rows.item(i);
+                if (column.name === 'updated_at') {
+                    hasUpdatedAt = true;
+                    break;
+                }
+            }
+
+            if (!hasUpdatedAt) {
+                // Agregar columna updated_at
+                await this.db.executeSql(`
+          ALTER TABLE media_files 
+          ADD COLUMN updated_at INTEGER DEFAULT 0;
+        `);
+
+                // Actualizar valores existentes con created_at
+                await this.db.executeSql(`
+          UPDATE media_files 
+          SET updated_at = created_at 
+          WHERE updated_at = 0;
+        `);
+
+                console.log("✅ Column updated_at added successfully");
+            } else {
+                console.log("ℹ️ Column updated_at already exists, skipping");
+            }
+
+        } catch (error) {
+            console.error("❌ Error in v1->v2 migration:", error);
+            throw error;
+        }
+    }
+
+    async recreateDatabase() {
+        console.log("🔨 Recreating database from scratch...");
+
+        try {
+            // Eliminar todas las tablas
+            await this.db.executeSql(`DROP TABLE IF EXISTS media_files;`);
+            await this.db.executeSql(`DROP TABLE IF EXISTS folders;`);
+            await this.db.executeSql(`DROP TABLE IF EXISTS cache_metadata;`);
+            await this.db.executeSql(`DROP TABLE IF EXISTS db_version;`);
+
+            // Crear tabla de versión
+            await this.db.executeSql(`
+        CREATE TABLE db_version (
+          version INTEGER PRIMARY KEY
+        );
+      `);
+            await this.db.executeSql(`INSERT INTO db_version (version) VALUES (?);`, [this.currentVersion]);
+
+            console.log("✅ Database recreated successfully");
+        } catch (error) {
+            console.error("❌ Error recreating database:", error);
+            throw error;
+        }
     }
 
     async createTables() {
@@ -51,8 +179,8 @@ class DatabaseService {
           duration TEXT,
           type TEXT NOT NULL,
           extension TEXT,
-          created_at INTEGER,
-          updated_at INTEGER
+          created_at INTEGER DEFAULT 0,
+          updated_at INTEGER DEFAULT 0
         );
       `);
 
@@ -67,17 +195,22 @@ class DatabaseService {
         ON media_files (name);
       `);
 
-            await this.db.executeSql(`
-        CREATE INDEX IF NOT EXISTS idx_media_updated 
-        ON media_files (updated_at);
-      `);
+            // Solo crear índice updated_at si la columna existe
+            try {
+                await this.db.executeSql(`
+          CREATE INDEX IF NOT EXISTS idx_media_updated 
+          ON media_files (updated_at);
+        `);
+            } catch (e) {
+                console.log("ℹ️ Skipping updated_at index (column may not exist yet)");
+            }
 
             // Tabla de carpetas personalizadas
             await this.db.executeSql(`
         CREATE TABLE IF NOT EXISTS folders (
           path TEXT PRIMARY KEY,
           is_custom INTEGER DEFAULT 0,
-          created_at INTEGER
+          created_at INTEGER DEFAULT 0
         );
       `);
 
@@ -86,7 +219,7 @@ class DatabaseService {
         CREATE TABLE IF NOT EXISTS cache_metadata (
           key TEXT PRIMARY KEY,
           value TEXT,
-          updated_at INTEGER
+          updated_at INTEGER DEFAULT 0
         );
       `);
 
@@ -361,6 +494,36 @@ class DatabaseService {
             console.log("✅ Cache cleared");
         } catch (error) {
             console.error("❌ Error clearing cache:", error);
+        }
+    }
+
+    /**
+     * Resetea completamente la base de datos (útil para debug)
+     */
+    async resetDatabase() {
+        try {
+            console.log("🔨 Resetting database...");
+
+            if (this.db) {
+                await this.db.close();
+                this.db = null;
+                this.initPromise = null;
+            }
+
+            // Eliminar el archivo de la base de datos
+            await SQLite.deleteDatabase({
+                name: database_name,
+                location: 'default',
+            });
+
+            console.log("✅ Database reset completed. Reinitializing...");
+
+            // Reinicializar
+            await this.init();
+
+        } catch (error) {
+            console.error("❌ Error resetting database:", error);
+            throw error;
         }
     }
 

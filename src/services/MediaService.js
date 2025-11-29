@@ -115,17 +115,24 @@ class MediaService {
 
         if (cacheValid) {
           console.log('✅ Loading from valid cache...');
-          const cachedFiles = await DatabaseService.getMediaFiles();
 
-          if (cachedFiles && cachedFiles.length > 0) {
-            console.log(`✅ Loaded ${cachedFiles.length} files from cache`);
-            const audio = cachedFiles.filter(f => f.type === 'audio');
-            const video = cachedFiles.filter(f => f.type === 'video');
+          try {
+            const cachedFiles = await DatabaseService.getMediaFiles();
 
-            // Opcionalmente, escanear en background después de 5 segundos
-            setTimeout(() => this.smartBackgroundScan(), 5000);
+            if (cachedFiles && cachedFiles.length > 0) {
+              console.log(`✅ Loaded ${cachedFiles.length} files from cache`);
+              const audio = cachedFiles.filter(f => f.type === 'audio');
+              const video = cachedFiles.filter(f => f.type === 'video');
 
-            return { audio, video };
+              // Opcionalmente, escanear en background después de 5 segundos
+              setTimeout(() => this.smartBackgroundScan(), 5000);
+
+              return { audio, video };
+            }
+          } catch (dbError) {
+            console.error('❌ Database error, forcing rescan:', dbError);
+            // Si hay error en la DB, hacer scan completo
+            forceRescan = true;
           }
         } else {
           console.log('⚠️ Cache expired or invalid');
