@@ -17,6 +17,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import MiniPlayer from '../components/MiniPlayer';
 import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
+import FavoritesService from '../services/FavoritesService';
 import FolderList from '../components/FolderList';
 import { useVideo } from '../context/VideoContext';
 
@@ -25,6 +26,7 @@ const HomeScreen = ({ navigation }) => {
   const [mediaFiles, setMediaFiles] = useState({
     audio: [],
     video: [],
+    favorites: [],
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,6 +37,12 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     checkPermissionsAndLoadMedia();
   }, []);
+
+  useEffect(() => {
+    if (activeSection === 'favorites') {
+      loadFavorites();
+    }
+  }, [activeSection]);
 
   const checkPermissionsAndLoadMedia = async () => {
     try {
@@ -77,7 +85,8 @@ const HomeScreen = ({ navigation }) => {
       const startTime = Date.now();
 
       const media = await MediaService.scanMediaFiles();
-      setMediaFiles(media);
+      const favorites = await FavoritesService.getAll();
+      setMediaFiles({ ...media, favorites });
 
       const loadTime = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`✅ Media loaded in ${loadTime}s`);
@@ -86,6 +95,15 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert('Error', 'No se pudieron cargar los archivos multimedia');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFavorites = async () => {
+    try {
+      const favorites = await FavoritesService.getAll();
+      setMediaFiles(prev => ({ ...prev, favorites }));
+    } catch (error) {
+      console.error('Error loading favorites:', error);
     }
   };
 
@@ -99,7 +117,8 @@ const HomeScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const media = await MediaService.scanMediaFiles(true);
-      setMediaFiles(media);
+      const favorites = await FavoritesService.getAll();
+      setMediaFiles({ ...media, favorites });
       Alert.alert('Escaneo completado', 'Se ha actualizado tu biblioteca multimedia.');
     } catch (error) {
       console.error('Error rescanning:', error);
@@ -130,6 +149,8 @@ const HomeScreen = ({ navigation }) => {
       return mediaFiles.audio || [];
     } else if (activeSection === 'video') {
       return mediaFiles.video || [];
+    } else if (activeSection === 'favorites') {
+      return mediaFiles.favorites || [];
     } else {
       return [...(mediaFiles.audio || []), ...(mediaFiles.video || [])];
     }
@@ -164,6 +185,8 @@ const HomeScreen = ({ navigation }) => {
         return 'Videos';
       case 'folders':
         return 'Carpetas';
+      case 'favorites':
+        return 'Favoritos';
       default:
         return 'Inicio';
     }

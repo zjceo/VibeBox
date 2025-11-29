@@ -24,6 +24,9 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const videoRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const doubleTapTimeoutRef = useRef(null);
+  const skipAnimLeft = useRef(new Animated.Value(0)).current;
+  const skipAnimRight = useRef(new Animated.Value(0)).current;
 
   const [currentVideo, setCurrentVideo] = useState(video);
   const [currentIndex, setCurrentIndex] = useState(
@@ -40,10 +43,11 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const [isSeeking, setIsSeeking] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPlaylist, setFilteredPlaylist] = useState(playlist);
+  const [isBuffering, setIsBuffering] = useState(false);
 
-  // Auto-ocultar controles con animación
+  // Auto-ocultar controles
   useEffect(() => {
-    if (showControls && !paused && !isSeeking) {
+    if (showControls && !paused && !isSeeking && !isBuffering) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
@@ -63,7 +67,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [showControls, paused, isSeeking]);
+  }, [showControls, paused, isSeeking, isBuffering]);
 
   const resetControlsTimeout = () => {
     if (controlsTimeoutRef.current) {
@@ -81,6 +85,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     if (videoRef.current) {
       videoRef.current.seek(value);
       setCurrentTime(value);
+      resetControlsTimeout();
     }
   };
 
@@ -94,13 +99,22 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     setDuration(data.duration);
     setLoading(false);
     setError(null);
+    setIsBuffering(false);
+    setPaused(false);
   };
 
   const handleError = (err) => {
     console.error('Video error:', err);
-    console.error('Current video path:', currentVideo.path);
-    setError('Error al cargar el video');
+    setError(`Error al cargar el video`);
     setLoading(false);
+    setIsBuffering(false);
+  };
+
+  const handleBuffer = (data) => {
+    setIsBuffering(data.isBuffering);
+    if (data.isBuffering) {
+      setShowControls(true);
+    }
   };
 
   const toggleControls = () => {
@@ -118,6 +132,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
       setShowControls(true);
       if (videoRef.current) {
         videoRef.current.seek(0);
+        setCurrentTime(0);
       }
     }
   };
@@ -130,6 +145,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
       setCurrentTime(0);
       setPaused(false);
       setLoading(true);
+      setShowControls(true);
     }
   };
 
@@ -143,6 +159,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
       setCurrentTime(0);
       setPaused(false);
       setLoading(true);
+      setShowControls(true);
     }
   };
 
@@ -153,11 +170,41 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     setPaused(false);
     setLoading(true);
     setShowPlaylist(false);
+    setShowControls(true);
   };
 
   const skipTime = (seconds) => {
     const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
     handleSeek(newTime);
+
+    const anim = seconds > 0 ? skipAnimRight : skipAnimLeft;
+    Animated.sequence([
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    resetControlsTimeout();
+  };
+
+  const handleDoubleTap = (side) => {
+    if (doubleTapTimeoutRef.current) {
+      clearTimeout(doubleTapTimeoutRef.current);
+      doubleTapTimeoutRef.current = null;
+      skipTime(side === 'left' ? -10 : 10);
+    } else {
+      doubleTapTimeoutRef.current = setTimeout(() => {
+        doubleTapTimeoutRef.current = null;
+        toggleControls();
+      }, 300);
+    }
   };
 
   const changePlaybackSpeed = () => {
@@ -165,38 +212,29 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     const currentSpeedIndex = speeds.indexOf(playbackRate);
     const nextSpeed = speeds[(currentSpeedIndex + 1) % speeds.length];
     setPlaybackRate(nextSpeed);
+    resetControlsTimeout();
   };
 
   const formatTime = (seconds) => {
+    if (isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Helper para obtener el nombre del video
   const getVideoName = (video) => {
     if (!video) return 'Video sin nombre';
-
-    // Intentar obtener el nombre de varias propiedades
     const name = video.filename || video.name || video.title;
-
-    if (name && name.trim()) {
-      return name;
-    }
-
-    // Si no hay nombre, intentar extraer del path
+    if (name && name.trim()) return name;
     if (video.path) {
       const pathParts = video.path.split('/');
       const fileName = pathParts[pathParts.length - 1];
-      // Remover extensión
       const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
       return nameWithoutExt || 'Video sin nombre';
     }
-
     return 'Video sin nombre';
   };
 
-  // Filtrar playlist según búsqueda
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredPlaylist(playlist);
@@ -209,10 +247,6 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     }
   }, [searchQuery, playlist]);
 
-  const clearSearch = () => {
-    setSearchQuery('');
-  };
-
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -221,7 +255,6 @@ const VideoPlayerScreen = ({ route, navigation }) => {
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorText}>{error}</Text>
           <Text style={styles.errorSubtext}>{getVideoName(currentVideo)}</Text>
-          <Text style={styles.errorPath}>Ruta: {currentVideo.path}</Text>
           <View style={styles.errorButtons}>
             <TouchableOpacity
               style={styles.errorButton}
@@ -246,252 +279,245 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar hidden />
 
-      <TouchableWithoutFeedback onPress={toggleControls}>
-        <View style={styles.videoContainer}>
-          <Video
-            ref={videoRef}
-            source={{ uri: currentVideo.path }}
-            style={styles.video}
-            paused={paused}
-            onProgress={handleProgress}
-            onLoad={handleLoad}
-            onError={handleError}
-            onEnd={handleEnd}
-            resizeMode="contain"
-            rate={playbackRate}
-          />
+      <View style={styles.videoContainer}>
+        {/* Video */}
+        <Video
+          ref={videoRef}
+          source={{ uri: currentVideo.path }}
+          style={styles.video}
+          paused={paused}
+          onProgress={handleProgress}
+          onLoad={handleLoad}
+          onError={handleError}
+          onEnd={handleEnd}
+          onBuffer={handleBuffer}
+          resizeMode="contain"
+          rate={playbackRate}
+          controls={false}
+          playInBackground={false}
+          playWhenInactive={false}
+          ignoreSilentSwitch="ignore"
+          progressUpdateInterval={250}
+          volume={1.0}
+        />
 
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#1DB954" />
-              <Text style={styles.loadingText}>Cargando...</Text>
-              <Text style={styles.loadingSubtext}>{getVideoName(currentVideo)}</Text>
+        {/* Loading */}
+        {(loading || isBuffering) && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#FF0000" />
+            <Text style={styles.loadingText}>
+              {isBuffering ? 'Buffering...' : 'Cargando...'}
+            </Text>
+          </View>
+        )}
+
+        {/* Tap Zones */}
+        <View style={styles.tapZonesContainer} pointerEvents={showControls ? 'none' : 'box-none'}>
+          <TouchableWithoutFeedback onPress={() => handleDoubleTap('left')}>
+            <View style={styles.tapZoneLeft}>
+              <Animated.View style={[styles.skipFeedback, { opacity: skipAnimLeft }]}>
+                <Text style={styles.skipFeedbackIcon}>⏪</Text>
+                <Text style={styles.skipFeedbackText}>10 seg</Text>
+              </Animated.View>
             </View>
-          )}
+          </TouchableWithoutFeedback>
 
-          {showControls && !loading && (
-            <Animated.View style={[styles.controlsOverlay, { opacity: fadeAnim }]}>
-              {/* Top Bar */}
+          <TouchableWithoutFeedback onPress={toggleControls}>
+            <View style={styles.tapZoneCenter} />
+          </TouchableWithoutFeedback>
+
+          <TouchableWithoutFeedback onPress={() => handleDoubleTap('right')}>
+            <View style={styles.tapZoneRight}>
+              <Animated.View style={[styles.skipFeedback, { opacity: skipAnimRight }]}>
+                <Text style={styles.skipFeedbackIcon}>⏩</Text>
+                <Text style={styles.skipFeedbackText}>10 seg</Text>
+              </Animated.View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+
+        {/* Controls */}
+        {showControls && !loading && (
+          <Animated.View
+            style={[styles.controlsContainer, { opacity: fadeAnim }]}
+            pointerEvents="box-none">
+
+            {/* Top Bar con fondo oscuro */}
+            <View style={styles.topBarContainer}>
               <View style={styles.topBar}>
                 <TouchableOpacity
                   style={styles.iconButton}
                   onPress={() => navigation.goBack()}>
-                  <Text style={styles.icon}>←</Text>
+                  <Text style={styles.iconText}>←</Text>
                 </TouchableOpacity>
-                <View style={styles.titleContainer}>
-                  <Text style={styles.title} numberOfLines={1}>
+
+                <View style={styles.titleArea}>
+                  <Text style={styles.videoTitle} numberOfLines={1}>
                     {getVideoName(currentVideo)}
                   </Text>
                   {playlist.length > 1 && (
-                    <Text style={styles.subtitle}>
+                    <Text style={styles.videoSubtitle}>
                       {currentIndex + 1} / {playlist.length}
                     </Text>
                   )}
                 </View>
+
                 <TouchableOpacity
                   style={styles.iconButton}
                   onPress={changePlaybackSpeed}>
                   <Text style={styles.speedText}>{playbackRate}x</Text>
                 </TouchableOpacity>
+
                 {playlist.length > 1 && (
                   <TouchableOpacity
                     style={styles.iconButton}
                     onPress={() => setShowPlaylist(true)}>
-                    <Text style={styles.icon}>☰</Text>
+                    <Text style={styles.iconText}>☰</Text>
                   </TouchableOpacity>
                 )}
               </View>
+            </View>
 
-              {/* Center Play Button */}
-              <View style={styles.centerControls}>
-                {currentIndex > 0 && (
-                  <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={playPreviousVideo}>
-                    <Text style={styles.controlIcon}>⏮</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.mainPlayButton}
-                  onPress={handlePlayPause}>
-                  <Text style={styles.mainPlayIcon}>
-                    {paused ? '▶' : '⏸'}
-                  </Text>
-                </TouchableOpacity>
-                {currentIndex < playlist.length - 1 && (
-                  <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={playNextVideo}>
-                    <Text style={styles.controlIcon}>⏭</Text>
-                  </TouchableOpacity>
-                )}
+            {/* Center Play Button - SIN FONDO */}
+            <View style={styles.centerArea}>
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={handlePlayPause}
+                activeOpacity={0.8}>
+                <Text style={styles.playIcon}>{paused ? '▶' : '⏸'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Bottom Bar con fondo oscuro */}
+            <View style={styles.bottomBarContainer}>
+              {/* Progress Bar */}
+              <View style={styles.progressSection}>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={duration || 1}
+                  value={currentTime}
+                  onValueChange={(value) => {
+                    setIsSeeking(true);
+                    setCurrentTime(value);
+                  }}
+                  onSlidingComplete={(value) => {
+                    setIsSeeking(false);
+                    handleSeek(value);
+                  }}
+                  minimumTrackTintColor="#FF0000"
+                  maximumTrackTintColor="rgba(255,255,255,0.3)"
+                  thumbTintColor="#FF0000"
+                />
               </View>
 
               {/* Bottom Controls */}
               <View style={styles.bottomBar}>
-                <View style={styles.progressContainer}>
-                  <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={0}
-                    maximumValue={duration}
-                    value={currentTime}
-                    onValueChange={(value) => {
-                      setIsSeeking(true);
-                      setCurrentTime(value);
-                    }}
-                    onSlidingComplete={(value) => {
-                      setIsSeeking(false);
-                      handleSeek(value);
-                    }}
-                    minimumTrackTintColor="#1DB954"
-                    maximumTrackTintColor="rgba(255,255,255,0.3)"
-                    thumbTintColor="#1DB954"
-                  />
-                  <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                <View style={styles.leftControls}>
+                  <TouchableOpacity onPress={handlePlayPause}>
+                    <Text style={styles.controlIcon}>{paused ? '▶' : '⏸'}</Text>
+                  </TouchableOpacity>
+
+                  {playlist.length > 1 && currentIndex > 0 && (
+                    <TouchableOpacity onPress={playPreviousVideo}>
+                      <Text style={styles.controlIcon}>⏮</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {playlist.length > 1 && currentIndex < playlist.length - 1 && (
+                    <TouchableOpacity onPress={playNextVideo}>
+                      <Text style={styles.controlIcon}>⏭</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <Text style={styles.timeDisplay}>
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </Text>
+                </View>
+
+                <View style={styles.rightControls}>
+                  <TouchableOpacity onPress={changePlaybackSpeed}>
+                    <Text style={styles.settingsIcon}>⚙</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-            </Animated.View>
-          )}
-
-          {/* Tap Zones para Skip */}
-          {!showControls && !loading && (
-            <>
-              <TouchableOpacity
-                style={[styles.tapZone, styles.tapZoneLeft]}
-                onPress={() => skipTime(-10)}
-                activeOpacity={0.9}>
-                <View style={styles.skipIndicator}>
-                  <Text style={styles.skipIcon}>⏪</Text>
-                  <Text style={styles.skipText}>-10s</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tapZone, styles.tapZoneRight]}
-                onPress={() => skipTime(10)}
-                activeOpacity={0.9}>
-                <View style={styles.skipIndicator}>
-                  <Text style={styles.skipIcon}>⏩</Text>
-                  <Text style={styles.skipText}>+10s</Text>
-                </View>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </TouchableWithoutFeedback>
+            </View>
+          </Animated.View>
+        )}
+      </View>
 
       {/* Playlist Modal */}
       <Modal
         visible={showPlaylist}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowPlaylist(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.playlistContainer}>
+        onRequestClose={() => {
+          setShowPlaylist(false);
+          setSearchQuery('');
+        }}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.playlistModal}>
             <View style={styles.playlistHeader}>
               <View>
-                <Text style={styles.playlistTitle}>
-                  Lista de reproducción
-                </Text>
-                <Text style={styles.playlistSubtitle}>
-                  {filteredPlaylist.length} de {playlist.length} videos
+                <Text style={styles.playlistTitle}>Lista de reproducción</Text>
+                <Text style={styles.playlistCount}>
+                  {filteredPlaylist.length} videos
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.closeButtonContainer}
                 onPress={() => {
                   setShowPlaylist(false);
                   setSearchQuery('');
-                }}>
-                <Text style={styles.closeButton}>✕</Text>
+                }}
+                style={styles.closeButton}>
+                <Text style={styles.closeText}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Buscador */}
-            <View style={styles.searchContainer}>
-              <View style={styles.searchInputContainer}>
-                <Text style={styles.searchIcon}>🔍</Text>
+            <View style={styles.searchBox}>
+              <View style={styles.searchInput}>
+                <Text style={styles.searchIconText}>🔍</Text>
                 <TextInput
-                  style={styles.searchInput}
-                  placeholder="Buscar video..."
+                  style={styles.searchField}
+                  placeholder="Buscar..."
                   placeholderTextColor="#666"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  autoCapitalize="none"
-                  autoCorrect={false}
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    onPress={clearSearch}
-                    style={styles.clearButton}>
-                    <Text style={styles.clearIcon}>✕</Text>
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Text style={styles.clearText}>✕</Text>
                   </TouchableOpacity>
                 )}
               </View>
-              {searchQuery.length > 0 && (
-                <Text style={styles.searchResults}>
-                  {filteredPlaylist.length} resultado{filteredPlaylist.length !== 1 ? 's' : ''}
-                </Text>
-              )}
             </View>
 
-            {/* Lista de videos */}
-            {filteredPlaylist.length > 0 ? (
-              <FlatList
-                data={filteredPlaylist}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                  const itemIndex = playlist.findIndex(v => v.id === item.id);
-                  const isActive = itemIndex === currentIndex;
-
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.playlistItem,
-                        isActive && styles.playlistItemActive,
-                      ]}
-                      onPress={() => selectVideo(item, itemIndex)}>
-                      <View style={styles.playlistItemLeft}>
-                        <Text style={[
-                          styles.playlistNumber,
-                          isActive && styles.activeText,
-                        ]}>
-                          {itemIndex + 1}
-                        </Text>
-                      </View>
-                      <View style={styles.playlistItemCenter}>
-                        <Text
-                          style={[
-                            styles.playlistItemTitle,
-                            isActive && styles.activeText,
-                          ]}
-                          numberOfLines={2}>
-                          {getVideoName(item)}
-                        </Text>
-                        <Text style={styles.playlistItemSubtitle}>
-                          {item.type?.toUpperCase() || 'VIDEO'}
-                        </Text>
-                      </View>
-                      {isActive && (
-                        <View style={styles.playingIndicator}>
-                          <View style={styles.playingDot} />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            ) : (
-              <View style={styles.noResultsContainer}>
-                <Text style={styles.noResultsIcon}>🔍</Text>
-                <Text style={styles.noResultsText}>
-                  No se encontraron videos
-                </Text>
-                <Text style={styles.noResultsSubtext}>
-                  Intenta con otro término de búsqueda
-                </Text>
-              </View>
-            )}
+            <FlatList
+              data={filteredPlaylist}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const itemIndex = playlist.findIndex(v => v.id === item.id);
+                const isActive = itemIndex === currentIndex;
+                return (
+                  <TouchableOpacity
+                    style={[styles.playlistItem, isActive && styles.activeItem]}
+                    onPress={() => selectVideo(item, itemIndex)}>
+                    <Text style={[styles.itemNumber, isActive && styles.activeNumber]}>
+                      {itemIndex + 1}
+                    </Text>
+                    <Text style={[styles.itemTitle, isActive && styles.activeTitle]} numberOfLines={2}>
+                      {getVideoName(item)}
+                    </Text>
+                    {isActive && <View style={styles.playingDot} />}
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={styles.emptyList}>
+                  <Text style={styles.emptyText}>No hay videos</Text>
+                </View>
+              }
+            />
           </View>
         </View>
       </Modal>
@@ -512,152 +538,172 @@ const styles = StyleSheet.create({
     width,
     height,
   },
-  loadingContainer: {
+  loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.9)',
   },
   loadingText: {
     color: '#fff',
-    marginTop: 12,
     fontSize: 16,
+    marginTop: 12,
     fontWeight: '600',
   },
-  loadingSubtext: {
-    color: '#888',
-    marginTop: 8,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  controlsOverlay: {
+
+  // TAP ZONES
+  tapZonesContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'space-between',
-  },
-  topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 20,
-    gap: 12,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  icon: {
-    fontSize: 22,
-    color: '#fff',
-  },
-  speedText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#b3b3b3',
-    marginTop: 2,
-  },
-  centerControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 32,
-  },
-  controlButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  controlIcon: {
-    fontSize: 24,
-    color: '#fff',
-  },
-  mainPlayButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#1DB954',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#1DB954',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  mainPlayIcon: {
-    fontSize: 32,
-    color: '#fff',
-  },
-  bottomBar: {
-    padding: 16,
-    paddingBottom: 24,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  slider: {
-    flex: 1,
-    height: 40,
-  },
-  timeText: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: '600',
-    minWidth: 45,
-    textAlign: 'center',
-  },
-  tapZone: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: '30%',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   tapZoneLeft: {
-    left: 0,
+    width: width * 0.35,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tapZoneCenter: {
+    flex: 1,
   },
   tapZoneRight: {
-    right: 0,
-  },
-  skipIndicator: {
+    width: width * 0.35,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 16,
-    borderRadius: 12,
   },
-  skipIcon: {
-    fontSize: 28,
+  skipFeedback: {
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 28,
+    paddingVertical: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  skipFeedbackIcon: {
+    fontSize: 36,
     color: '#fff',
   },
-  skipText: {
+  skipFeedbackText: {
     fontSize: 14,
     color: '#fff',
     marginTop: 4,
     fontWeight: '600',
   },
+
+  // CONTROLS
+  controlsContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+  },
+
+  // TOP BAR
+  topBarContainer: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconText: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  speedText: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  titleArea: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  videoTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  videoSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+
+  // CENTER
+  centerArea: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  playIcon: {
+    fontSize: 30,
+    color: '#fff',
+  },
+
+  // BOTTOM BAR
+  bottomBarContainer: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  progressSection: {
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  leftControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rightControls: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  controlIcon: {
+    fontSize: 22,
+    color: '#fff',
+  },
+  settingsIcon: {
+    fontSize: 22,
+    color: '#fff',
+  },
+  timeDisplay: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+
+  // ERROR
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -665,8 +711,8 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   errorIcon: {
-    fontSize: 64,
-    marginBottom: 20,
+    fontSize: 60,
+    marginBottom: 16,
   },
   errorText: {
     fontSize: 18,
@@ -676,188 +722,139 @@ const styles = StyleSheet.create({
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#b3b3b3',
+    color: '#aaa',
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  errorPath: {
-    fontSize: 11,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   errorButtons: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   errorButton: {
-    backgroundColor: '#1DB954',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 25,
+    backgroundColor: '#FF0000',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 24,
   },
   backErrorButton: {
-    backgroundColor: '#333',
+    backgroundColor: '#444',
   },
   errorButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#fff',
   },
-  modalContainer: {
+
+  // MODAL
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'flex-end',
   },
-  playlistContainer: {
-    backgroundColor: '#121212',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '75%',
+  playlistModal: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '70%',
   },
   playlistHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingBottom: 16,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   playlistTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#fff',
-    marginBottom: 4,
   },
-  playlistSubtitle: {
-    fontSize: 13,
-    color: '#b3b3b3',
+  playlistCount: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
   },
-  closeButtonContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  closeButton: {
-    fontSize: 24,
+  closeText: {
+    fontSize: 20,
     color: '#fff',
-    fontWeight: '300',
   },
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  searchBox: {
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
-  searchInputContainer: {
+  searchInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 48,
+    backgroundColor: '#282828',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 42,
   },
-  searchIcon: {
+  searchIconText: {
     fontSize: 16,
-    marginRight: 12,
+    marginRight: 8,
   },
-  searchInput: {
+  searchField: {
     flex: 1,
     fontSize: 15,
     color: '#fff',
-    fontWeight: '500',
   },
-  clearButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  clearIcon: {
-    fontSize: 14,
+  clearText: {
+    fontSize: 16,
     color: '#888',
-  },
-  searchResults: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 8,
-    fontWeight: '500',
   },
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
-  playlistItemActive: {
-    backgroundColor: 'rgba(29,185,84,0.15)',
-    borderLeftWidth: 4,
-    borderLeftColor: '#1DB954',
+  activeItem: {
+    backgroundColor: 'rgba(255,0,0,0.1)',
   },
-  playlistItemLeft: {
-    width: 40,
-    alignItems: 'center',
-  },
-  playlistNumber: {
-    fontSize: 16,
+  itemNumber: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#666',
+    width: 32,
   },
-  playlistItemCenter: {
+  activeNumber: {
+    color: '#FF0000',
+  },
+  itemTitle: {
     flex: 1,
-    marginLeft: 12,
-  },
-  playlistItemTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#fff',
-    marginBottom: 4,
   },
-  playlistItemSubtitle: {
-    fontSize: 13,
-    color: '#b3b3b3',
-  },
-  activeText: {
-    color: '#1DB954',
-  },
-  playingIndicator: {
-    marginLeft: 8,
+  activeTitle: {
+    color: '#FF0000',
   },
   playingDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#1DB954',
+    backgroundColor: '#FF0000',
   },
-  noResultsContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  emptyList: {
+    padding: 40,
     alignItems: 'center',
-    paddingVertical: 60,
   },
-  noResultsIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-    opacity: 0.3,
-  },
-  noResultsText: {
+  emptyText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  noResultsSubtext: {
-    fontSize: 13,
-    color: '#888',
+    color: '#666',
   },
 });
 

@@ -25,7 +25,7 @@ interface DbMediaFile {
 class DatabaseService {
     private db: SQLiteDatabase | null = null;
     private initPromise: Promise<void> | null = null;
-    private currentVersion = 3;
+    private currentVersion = 4;
 
     async init(): Promise<void> {
         if (this.initPromise) return this.initPromise;
@@ -99,6 +99,9 @@ class DatabaseService {
             }
             if (fromVersion < 3 && toVersion >= 3) {
                 await this.migrateV2ToV3();
+            }
+            if (fromVersion < 4 && toVersion >= 4) {
+                await this.migrateV3ToV4();
             }
 
             await this.db.executeSql(`UPDATE db_version SET version = ?;`, [toVersion]);
@@ -187,6 +190,26 @@ class DatabaseService {
         }
     }
 
+    private async migrateV3ToV4(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        console.log("🔄 Migrating v3 -> v4: Creating favorites table...");
+
+        try {
+            await this.db.executeSql(`
+        CREATE TABLE IF NOT EXISTS favorites (
+          media_id TEXT PRIMARY KEY,
+          created_at INTEGER DEFAULT 0,
+          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
+        );
+      `);
+            console.log("✅ Favorites table created successfully");
+        } catch (error) {
+            console.error("❌ Error in v3->v4 migration:", error);
+            throw error;
+        }
+    }
+
     private async recreateDatabase(): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
@@ -196,6 +219,7 @@ class DatabaseService {
             await this.db.executeSql(`DROP TABLE IF EXISTS media_files;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS folders;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS cache_metadata;`);
+            await this.db.executeSql(`DROP TABLE IF EXISTS favorites;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS db_version;`);
 
             await this.db.executeSql(`
@@ -263,6 +287,14 @@ class DatabaseService {
           key TEXT PRIMARY KEY,
           value TEXT,
           updated_at INTEGER DEFAULT 0
+        );
+      `);
+
+            await this.db.executeSql(`
+        CREATE TABLE IF NOT EXISTS favorites (
+          media_id TEXT PRIMARY KEY,
+          created_at INTEGER DEFAULT 0,
+          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
         );
       `);
 
@@ -405,6 +437,7 @@ class DatabaseService {
             await this.db.transaction(async (tx) => {
                 await tx.executeSql('DELETE FROM media_files');
                 await tx.executeSql('DELETE FROM cache_metadata');
+                await tx.executeSql('DELETE FROM favorites');
             });
             console.log("✅ Cache cleared");
         } catch (error) {
@@ -513,6 +546,91 @@ class DatabaseService {
         } catch (error) {
             console.error("❌ Error resetting database:", error);
             throw error;
+        }
+    }
+
+    // ==================== FAVORITES METHODS ====================
+
+    async addToFavorites(mediaId: string): Promise<void> {
+        await this.init();
+        if (!this.db) return;
+
+        try {
+            await this.db.executeSql(
+                `INSERT OR IGNORE INTO favorites (media_id, created_at) VALUES (?, ?)`,
+                [mediaId, Date.now()]
+            );
+            console.log(`❤️ Added to favorites: ${mediaId}`);
+        } catch (error) {
+            console.error("❌ Error adding to favorites:", error);
+            throw error;
+        }
+    }
+
+    async removeFromFavorites(mediaId: string): Promise<void> {
+        await this.init();
+        if (!this.db) return;
+
+        try {
+            await this.db.executeSql(
+                `DELETE FROM favorites WHERE media_id = ?`,
+                [mediaId]
+            );
+            console.log(`💔 Removed from favorites: ${mediaId}`);
+        } catch (error) {
+            console.error("❌ Error removing from favorites:", error);
+            throw error;
+        }
+    }
+
+    async isFavorite(mediaId: string): Promise<boolean> {
+        await this.init();
+        if (!this.db) return false;
+
+        try {
+            const [results] = await this.db.executeSql(
+                `SELECT 1 FROM favorites WHERE media_id = ?`,
+                [mediaId]
+            );
+            return results.rows.length > 0;
+        } catch (error) {
+            console.error("❌ Error checking favorite status:", error);
+            return false;
+        }
+    }
+
+    async getFavorites(): Promise<MediaFile[]> {
+        await this.init();
+        if (!this.db) return [];
+
+        try {
+            const [results] = await this.db.executeSql(
+                `SELECT m.* FROM media_files m
+         INNER JOIN favorites f ON m.id = f.media_id
+         ORDER BY f.created_at DESC`
+            );
+
+            const files: MediaFile[] = [];
+            for (let i = 0; i < results.rows.length; i++) {
+                const item = results.rows.item(i) as DbMediaFile;
+                files.push({
+                    id: item.id,
+                    filename: item.name,
+                    name: item.name,
+                    title: item.title || item.name,
+                    path: item.path,
+                    extension: item.extension,
+                    type: item.type,
+                    size: item.size,
+                    dateAdded: item.created_at,
+                    lastModified: item.updated_at,
+                });
+            }
+
+            return files;
+        } catch (error) {
+            console.error("❌ Error getting favorites:", error);
+            return [];
         }
     }
 }

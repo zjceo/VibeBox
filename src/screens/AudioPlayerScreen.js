@@ -14,6 +14,7 @@ const { width } = Dimensions.get('window');
 import PlayerControls from '../components/PlayerControls';
 import LoadingScreen from '../components/LoadingScreen';
 import AudioPlayerService from '../services/AudioPlayerService';
+import FavoritesService from '../services/FavoritesService';
 import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents } from 'react-native-track-player';
 
 const AudioPlayerScreen = ({ route, navigation }) => {
@@ -26,14 +27,20 @@ const AudioPlayerScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [repeatMode, setRepeatMode] = useState('off');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     initializePlayer();
+    checkFavoriteStatus();
 
     return () => {
       AudioPlayerService.pause();
     };
   }, []);
+
+  useEffect(() => {
+    checkFavoriteStatus();
+  }, [currentTrack]);
 
   // Actualizar progreso
   useEffect(() => {
@@ -168,6 +175,20 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     }
   };
 
+  const checkFavoriteStatus = async () => {
+    if (currentTrack?.id) {
+      const fav = await FavoritesService.isFavorite(currentTrack.id);
+      setIsFavorite(fav);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (currentTrack?.id) {
+      const newStatus = await FavoritesService.toggle(currentTrack.id);
+      setIsFavorite(newStatus);
+    }
+  };
+
   const getRepeatIcon = () => {
     if (repeatMode === 'off') return 'repeat';
     if (repeatMode === 'track') return 'repeat-1';
@@ -197,7 +218,14 @@ const AudioPlayerScreen = ({ route, navigation }) => {
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Reproduciendo ahora</Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={toggleFavorite}
+          activeOpacity={0.7}>
+          <Text style={styles.favoriteIcon}>
+            {isFavorite ? '❤️' : '🤍'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Album Art */}
@@ -292,6 +320,15 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
+  },
+  favoriteButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriteIcon: {
+    fontSize: 24,
   },
   albumArtContainer: {
     flex: 1,
