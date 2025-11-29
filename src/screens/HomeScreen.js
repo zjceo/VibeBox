@@ -89,6 +89,20 @@ const HomeScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  const handleRescan = async () => {
+    setLoading(true);
+    try {
+      const media = await MediaService.scanMediaFiles(true); // Force rescan
+      setMediaFiles(media);
+      Alert.alert('Escaneo completado', 'Se ha actualizado tu biblioteca multimedia.');
+    } catch (error) {
+      console.error('Error rescanning:', error);
+      Alert.alert('Error', 'No se pudo completar el escaneo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMediaPress = (item) => {
     // Determinar el tipo de archivo
     const isAudio = item.type === 'audio' ||
@@ -155,7 +169,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   if (loading && !refreshing) {
-    return <LoadingScreen message="Escaneando archivos multimedia..." />;
+    return <LoadingScreen message="Cargando biblioteca..." />;
   }
 
   if (!hasPermission) {
@@ -191,6 +205,7 @@ const HomeScreen = ({ navigation }) => {
         <CompactSidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
+          onRescan={handleRescan}
         />
 
         {/* Library Panel - Solo mostrar en la sección 'home' y pantallas grandes */}

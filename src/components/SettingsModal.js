@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const SettingsModal = ({ visible, onClose }) => {
+const SettingsModal = ({ visible, onClose, onRescan }) => {
   const [autoPlay, setAutoPlay] = useState(true);
   const [notifications, setNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
@@ -25,8 +25,9 @@ const SettingsModal = ({ visible, onClose }) => {
         {
           text: 'Escanear',
           onPress: () => {
-            // Aquí llamarías a tu función de escaneo
-            Alert.alert('Escaneando...', 'Buscando nuevos archivos');
+            if (onRescan) {
+              onRescan();
+            }
             onClose();
           }
         }

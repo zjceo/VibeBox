@@ -1,6 +1,7 @@
 import RNFS from 'react-native-fs';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DatabaseService from './DatabaseService';
 
 class MediaService {
   audioExtensions = ['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg'];
@@ -76,34 +77,66 @@ class MediaService {
     return [...paths, ...this.customPaths];
   }
 
-  async scanMediaFiles() {
+  async scanMediaFiles(forceRescan = false) {
     try {
-      // Asegurarse de tener las rutas más recientes
-      await this.loadCustomPaths();
+      // 1. Intentar cargar desde caché (DB) si no se fuerza el reescaneo
+      if (!forceRescan) {
+        console.log('Checking database cache...');
+        const cachedFiles = await DatabaseService.getMediaFiles();
+        if (cachedFiles && cachedFiles.length > 0) {
+          console.log(`Loaded ${cachedFiles.length} files from cache`);
+          const audio = cachedFiles.filter(f => f.type === 'audio');
+          const video = cachedFiles.filter(f => f.type === 'video');
 
-      const paths = this.getMediaPaths();
-      const allMedia = {
-        audio: [],
-        video: [],
-      };
+          // Lanzar escaneo en segundo plano para actualizar si es necesario
+          this.scanAndSaveInBackground();
 
-      for (const path of paths) {
-        const exists = await RNFS.exists(path);
-        if (exists) {
-          const files = await this.scanDirectory(path);
-          allMedia.audio.push(...files.audio);
-          allMedia.video.push(...files.video);
+          return { audio, video };
         }
       }
 
-      // Eliminar duplicados basándose en la ruta del archivo
-      allMedia.audio = this.removeDuplicates(allMedia.audio);
-      allMedia.video = this.removeDuplicates(allMedia.video);
+      // 2. Si no hay caché o se fuerza, escanear sistema de archivos
+      console.log('Scanning file system...');
+      return await this.performFullScan();
 
-      return allMedia;
     } catch (error) {
       console.error('Error scanning media files:', error);
       return { audio: [], video: [] };
+    }
+  }
+
+  async performFullScan() {
+    await this.loadCustomPaths();
+    const paths = this.getMediaPaths();
+    const allMedia = { audio: [], video: [] };
+
+    for (const path of paths) {
+      const exists = await RNFS.exists(path);
+      if (exists) {
+        const files = await this.scanDirectory(path);
+        allMedia.audio.push(...files.audio);
+        allMedia.video.push(...files.video);
+      }
+    }
+
+    // Eliminar duplicados
+    allMedia.audio = this.removeDuplicates(allMedia.audio);
+    allMedia.video = this.removeDuplicates(allMedia.video);
+
+    // Guardar en DB
+    const allFiles = [...allMedia.audio, ...allMedia.video];
+    await DatabaseService.saveMediaFiles(allFiles);
+
+    return allMedia;
+  }
+
+  async scanAndSaveInBackground() {
+    try {
+      console.log('Starting background scan...');
+      await this.performFullScan();
+      console.log('Background scan completed and saved to DB');
+    } catch (e) {
+      console.error('Background scan failed', e);
     }
   }
 

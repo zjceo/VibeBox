@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import SettingsModal from './SettingsModal';
 
-const CompactSidebar = ({ activeSection, onSectionChange }) => {
+const CompactSidebar = ({ activeSection, onSectionChange, onRescan }) => {
   const [showSettings, setShowSettings] = useState(false);
   const { height, width } = useWindowDimensions();
   const isLandscape = width > height;
@@ -68,6 +68,7 @@ const CompactSidebar = ({ activeSection, onSectionChange }) => {
       <SettingsModal
         visible={showSettings}
         onClose={() => setShowSettings(false)}
+        onRescan={onRescan}
       />
     </View>
   );
