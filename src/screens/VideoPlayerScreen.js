@@ -98,6 +98,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
 
   const handleError = (err) => {
     console.error('Video error:', err);
+    console.error('Current video path:', currentVideo.path);
     setError('Error al cargar el video');
     setLoading(false);
   };
@@ -161,8 +162,8 @@ const VideoPlayerScreen = ({ route, navigation }) => {
 
   const changePlaybackSpeed = () => {
     const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-    const currentIndex = speeds.indexOf(playbackRate);
-    const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
+    const currentSpeedIndex = speeds.indexOf(playbackRate);
+    const nextSpeed = speeds[(currentSpeedIndex + 1) % speeds.length];
     setPlaybackRate(nextSpeed);
   };
 
@@ -172,14 +173,38 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Helper para obtener el nombre del video
+  const getVideoName = (video) => {
+    if (!video) return 'Video sin nombre';
+
+    // Intentar obtener el nombre de varias propiedades
+    const name = video.filename || video.name || video.title;
+
+    if (name && name.trim()) {
+      return name;
+    }
+
+    // Si no hay nombre, intentar extraer del path
+    if (video.path) {
+      const pathParts = video.path.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      // Remover extensión
+      const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+      return nameWithoutExt || 'Video sin nombre';
+    }
+
+    return 'Video sin nombre';
+  };
+
   // Filtrar playlist según búsqueda
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredPlaylist(playlist);
     } else {
-      const filtered = playlist.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const filtered = playlist.filter(item => {
+        const name = getVideoName(item).toLowerCase();
+        return name.includes(searchQuery.toLowerCase());
+      });
       setFilteredPlaylist(filtered);
     }
   }, [searchQuery, playlist]);
@@ -195,7 +220,8 @@ const VideoPlayerScreen = ({ route, navigation }) => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <Text style={styles.errorSubtext}>{currentVideo.name}</Text>
+          <Text style={styles.errorSubtext}>{getVideoName(currentVideo)}</Text>
+          <Text style={styles.errorPath}>Ruta: {currentVideo.path}</Text>
           <View style={styles.errorButtons}>
             <TouchableOpacity
               style={styles.errorButton}
@@ -224,7 +250,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
         <View style={styles.videoContainer}>
           <Video
             ref={videoRef}
-            source={{ uri: currentVideo.uri }}
+            source={{ uri: currentVideo.path }}
             style={styles.video}
             paused={paused}
             onProgress={handleProgress}
@@ -239,6 +265,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#1DB954" />
               <Text style={styles.loadingText}>Cargando...</Text>
+              <Text style={styles.loadingSubtext}>{getVideoName(currentVideo)}</Text>
             </View>
           )}
 
@@ -253,7 +280,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
                   <Text style={styles.title} numberOfLines={1}>
-                    {currentVideo.name}
+                    {getVideoName(currentVideo)}
                   </Text>
                   {playlist.length > 1 && (
                     <Text style={styles.subtitle}>
@@ -439,10 +466,10 @@ const VideoPlayerScreen = ({ route, navigation }) => {
                             isActive && styles.activeText,
                           ]}
                           numberOfLines={2}>
-                          {item.name}
+                          {getVideoName(item)}
                         </Text>
                         <Text style={styles.playlistItemSubtitle}>
-                          {item.extension?.toUpperCase()}
+                          {item.type?.toUpperCase() || 'VIDEO'}
                         </Text>
                       </View>
                       {isActive && (
@@ -495,6 +522,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 12,
     fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingSubtext: {
+    color: '#888',
+    marginTop: 8,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   controlsOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -643,7 +678,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#b3b3b3',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorPath: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
     marginBottom: 32,
+    paddingHorizontal: 20,
   },
   errorButtons: {
     flexDirection: 'row',

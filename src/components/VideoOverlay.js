@@ -39,6 +39,12 @@ const VideoOverlay = () => {
     const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const minimizeAnim = useRef(new Animated.Value(0)).current;
 
+    // Helper para obtener nombre del video
+    const getVideoName = (video) => {
+        if (!video) return 'Video';
+        return video.filename || video.name || video.title || 'Video';
+    };
+
     useEffect(() => {
         if (isVisible && currentVideo) {
             Animated.spring(slideAnim, {
@@ -47,7 +53,7 @@ const VideoOverlay = () => {
             }).start();
             setPaused(false);
             // Mostrar notificación
-            NativeVideoNotification.show(currentVideo.name, true);
+            NativeVideoNotification.show(getVideoName(currentVideo), true);
         } else {
             Animated.timing(slideAnim, {
                 toValue: SCREEN_HEIGHT,
@@ -79,7 +85,7 @@ const VideoOverlay = () => {
     // Actualizar notificación cuando cambia el estado de reproducción
     useEffect(() => {
         if (isVisible && currentVideo) {
-            NativeVideoNotification.show(currentVideo.name, !paused);
+            NativeVideoNotification.show(getVideoName(currentVideo), !paused);
         }
     }, [paused, isVisible, currentVideo]);
 
@@ -175,7 +181,7 @@ const VideoOverlay = () => {
                     <Animated.View style={{ width: videoWidth, height: videoHeight, backgroundColor: 'black' }}>
                         <Video
                             ref={videoRef}
-                            source={{ uri: currentVideo.uri }}
+                            source={{ uri: currentVideo.path }}
                             style={styles.video}
                             paused={paused}
                             onLoad={handleLoad}
@@ -192,7 +198,7 @@ const VideoOverlay = () => {
                 {/* Mini Player Info */}
                 <Animated.View style={[styles.miniPlayerInfo, { opacity: miniControlsOpacity }]}>
                     <TouchableOpacity style={styles.miniInfoText} onPress={maximizeVideo}>
-                        <Text style={styles.miniTitle} numberOfLines={1}>{currentVideo.name}</Text>
+                        <Text style={styles.miniTitle} numberOfLines={1}>{getVideoName(currentVideo)}</Text>
                     </TouchableOpacity>
                     <View style={styles.miniControls}>
                         <TouchableOpacity onPress={togglePlayPause} style={styles.miniButton}>
@@ -210,7 +216,7 @@ const VideoOverlay = () => {
                         <TouchableOpacity onPress={minimizeVideo} style={styles.iconButton}>
                             <Text style={styles.iconText}>⌄</Text>
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle} numberOfLines={1}>{currentVideo.name}</Text>
+                        <Text style={styles.headerTitle} numberOfLines={1}>{getVideoName(currentVideo)}</Text>
                         <TouchableOpacity onPress={closeVideo} style={styles.iconButton}>
                             <Text style={styles.iconText}>✕</Text>
                         </TouchableOpacity>

@@ -5,7 +5,7 @@ import type { MediaFile, DatabaseStats } from '../types';
 SQLite.enablePromise(true);
 
 const database_name = "VibeBox.db";
-const database_version = "2.0";
+const database_version = "3.0";
 const database_displayname = "VibeBox Database";
 const database_size = 200000;
 
@@ -13,6 +13,7 @@ interface DbMediaFile {
     id: string;
     path: string;
     name: string;
+    title: string;
     size: number;
     duration: string;
     type: 'audio' | 'video';
@@ -24,7 +25,7 @@ interface DbMediaFile {
 class DatabaseService {
     private db: SQLiteDatabase | null = null;
     private initPromise: Promise<void> | null = null;
-    private currentVersion = 2;
+    private currentVersion = 3;
 
     async init(): Promise<void> {
         if (this.initPromise) return this.initPromise;
@@ -93,8 +94,11 @@ class DatabaseService {
         console.log(`🔄 Migrating database from v${fromVersion} to v${toVersion}...`);
 
         try {
-            if (fromVersion === 1 && toVersion >= 2) {
+            if (fromVersion < 2 && toVersion >= 2) {
                 await this.migrateV1ToV2();
+            }
+            if (fromVersion < 3 && toVersion >= 3) {
+                await this.migrateV2ToV3();
             }
 
             await this.db.executeSql(`UPDATE db_version SET version = ?;`, [toVersion]);
@@ -144,6 +148,45 @@ class DatabaseService {
         }
     }
 
+    private async migrateV2ToV3(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        console.log("🔄 Migrating v2 -> v3: Adding title column...");
+
+        try {
+            const [columnCheck] = await this.db.executeSql(`PRAGMA table_info(media_files);`);
+            let hasTitle = false;
+
+            for (let i = 0; i < columnCheck.rows.length; i++) {
+                const column = columnCheck.rows.item(i);
+                if (column.name === 'title') {
+                    hasTitle = true;
+                    break;
+                }
+            }
+
+            if (!hasTitle) {
+                await this.db.executeSql(`
+          ALTER TABLE media_files 
+          ADD COLUMN title TEXT;
+        `);
+
+                await this.db.executeSql(`
+          UPDATE media_files 
+          SET title = name 
+          WHERE title IS NULL;
+        `);
+
+                console.log("✅ Column title added successfully");
+            } else {
+                console.log("ℹ️ Column title already exists, skipping");
+            }
+        } catch (error) {
+            console.error("❌ Error in v2->v3 migration:", error);
+            throw error;
+        }
+    }
+
     private async recreateDatabase(): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
@@ -178,6 +221,7 @@ class DatabaseService {
           id TEXT PRIMARY KEY,
           path TEXT NOT NULL UNIQUE,
           name TEXT,
+          title TEXT,
           size INTEGER,
           duration TEXT,
           type TEXT NOT NULL,
@@ -244,6 +288,8 @@ class DatabaseService {
                 files.push({
                     id: item.id,
                     filename: item.name,
+                    name: item.name,
+                    title: item.title || item.name,
                     path: item.path,
                     type: item.type,
                     size: item.size,
@@ -252,7 +298,7 @@ class DatabaseService {
                 });
             }
 
-            console.log(`📁 Loaded ${files.length} files from database`);
+            console.log(`🔍 Loaded ${files.length} files from database`);
             return files;
         } catch (error) {
             console.error("❌ Error getting media files:", error);
@@ -276,6 +322,8 @@ class DatabaseService {
                 files.push({
                     id: item.id,
                     filename: item.name,
+                    name: item.name,
+                    title: item.title || item.name,
                     path: item.path,
                     type: item.type,
                     size: item.size,
@@ -313,12 +361,13 @@ class DatabaseService {
                     const promises = batch.map(file =>
                         tx.executeSql(
                             `INSERT OR REPLACE INTO media_files 
-              (id, path, name, size, duration, type, extension, created_at, updated_at) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              (id, path, name, title, size, duration, type, extension, created_at, updated_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
                                 file.id,
                                 file.path,
                                 file.filename,
+                                file.title || file.name || file.filename,
                                 file.size || 0,
                                 file.duration?.toString() || '',
                                 file.type,
@@ -413,10 +462,10 @@ class DatabaseService {
         try {
             const [results] = await this.db.executeSql(
                 `SELECT * FROM media_files 
-        WHERE name LIKE ? 
+        WHERE name LIKE ? OR title LIKE ?
         ORDER BY name ASC 
         LIMIT 50`,
-                [`%${query}%`]
+                [`%${query}%`, `%${query}%`]
             );
 
             const files: MediaFile[] = [];
@@ -425,6 +474,8 @@ class DatabaseService {
                 files.push({
                     id: item.id,
                     filename: item.name,
+                    name: item.name,
+                    title: item.title || item.name,
                     path: item.path,
                     type: item.type,
                     size: item.size,

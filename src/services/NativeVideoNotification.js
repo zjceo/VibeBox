@@ -13,7 +13,9 @@ const eventEmitter = VideoNotificationModule
 const NativeVideoNotification = {
     show: (title, isPlaying) => {
         if (VideoNotificationModule) {
-            VideoNotificationModule.showNotification(title, isPlaying);
+            // Validar que title no sea null o undefined
+            const safeTitle = title || 'Reproduciendo video';
+            VideoNotificationModule.showNotification(safeTitle, isPlaying);
         }
     },
 

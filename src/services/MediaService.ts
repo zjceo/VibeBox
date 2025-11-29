@@ -320,22 +320,29 @@ class MediaService {
 
       files.forEach(item => {
         const extension = item.name.substring(item.name.lastIndexOf('.')).toLowerCase();
+        // Guardar el nombre SIN la extensión para display
+        const displayName = item.name.substring(0, item.name.lastIndexOf('.'));
 
         if (this.audioExtensions.includes(extension)) {
           media.audio.push({
             id: item.path,
-            filename: item.name.replace(extension, ''),
-            path: item.path,
+            filename: displayName, // Sin extensión para mostrar
+            name: displayName, // Alias para compatibilidad
+            title: displayName, // Alias para compatibilidad
+            path: item.path, // Path completo con extensión para reproducir
             size: item.size,
             type: 'audio',
             dateAdded: Date.now(),
             lastModified: Date.now(),
+            extension,
           });
         } else if (this.videoExtensions.includes(extension)) {
           media.video.push({
             id: item.path,
-            filename: item.name.replace(extension, ''),
-            path: item.path,
+            filename: displayName, // Sin extensión para mostrar
+            name: displayName, // Alias para compatibilidad
+            title: displayName, // Alias para compatibilidad
+            path: item.path, // Path completo con extensión para reproducir
             size: item.size,
             type: 'video',
             dateAdded: Date.now(),

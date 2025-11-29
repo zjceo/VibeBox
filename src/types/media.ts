@@ -11,13 +11,14 @@ export type MediaType = 'audio' | 'video';
 export interface MediaFile {
     id: string;
     filename: string;
+    name?: string;           // Alias para filename (compatibilidad)
+    title?: string;          // Alias para filename (compatibilidad)
     path: string;
     type: MediaType;
     duration?: number;
     size: number;
     dateAdded: number;
     lastModified: number;
-    title?: string;
     artist?: string;
     album?: string;
     artwork?: string;
