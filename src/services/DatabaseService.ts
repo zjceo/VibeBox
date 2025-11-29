@@ -25,7 +25,7 @@ interface DbMediaFile {
 class DatabaseService {
     private db: SQLiteDatabase | null = null;
     private initPromise: Promise<void> | null = null;
-    private currentVersion = 4;
+    private currentVersion = 5;
 
     async init(): Promise<void> {
         if (this.initPromise) return this.initPromise;
@@ -102,6 +102,9 @@ class DatabaseService {
             }
             if (fromVersion < 4 && toVersion >= 4) {
                 await this.migrateV3ToV4();
+            }
+            if (fromVersion < 5 && toVersion >= 5) {
+                await this.migrateV4ToV5();
             }
 
             await this.db.executeSql(`UPDATE db_version SET version = ?;`, [toVersion]);
@@ -210,6 +213,40 @@ class DatabaseService {
         }
     }
 
+    private async migrateV4ToV5(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        console.log("🔄 Migrating v4 -> v5: Creating playlists tables...");
+
+        try {
+            await this.db.executeSql(`
+        CREATE TABLE IF NOT EXISTS playlists (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          cover_image TEXT,
+          created_at INTEGER DEFAULT 0,
+          updated_at INTEGER DEFAULT 0
+        );
+      `);
+
+            await this.db.executeSql(`
+        CREATE TABLE IF NOT EXISTS playlist_items (
+          id TEXT PRIMARY KEY,
+          playlist_id TEXT NOT NULL,
+          media_id TEXT NOT NULL,
+          position INTEGER DEFAULT 0,
+          added_at INTEGER DEFAULT 0,
+          FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE,
+          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
+        );
+      `);
+            console.log("✅ Playlists tables created successfully");
+        } catch (error) {
+            console.error("❌ Error in v4->v5 migration:", error);
+            throw error;
+        }
+    }
+
     private async recreateDatabase(): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
@@ -220,6 +257,8 @@ class DatabaseService {
             await this.db.executeSql(`DROP TABLE IF EXISTS folders;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS cache_metadata;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS favorites;`);
+            await this.db.executeSql(`DROP TABLE IF EXISTS playlists;`);
+            await this.db.executeSql(`DROP TABLE IF EXISTS playlist_items;`);
             await this.db.executeSql(`DROP TABLE IF EXISTS db_version;`);
 
             await this.db.executeSql(`
@@ -294,6 +333,28 @@ class DatabaseService {
         CREATE TABLE IF NOT EXISTS favorites (
           media_id TEXT PRIMARY KEY,
           created_at INTEGER DEFAULT 0,
+          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
+        );
+      `);
+
+            await this.db.executeSql(`
+        CREATE TABLE IF NOT EXISTS playlists (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          cover_image TEXT,
+          created_at INTEGER DEFAULT 0,
+          updated_at INTEGER DEFAULT 0
+        );
+      `);
+
+            await this.db.executeSql(`
+        CREATE TABLE IF NOT EXISTS playlist_items (
+          id TEXT PRIMARY KEY,
+          playlist_id TEXT NOT NULL,
+          media_id TEXT NOT NULL,
+          position INTEGER DEFAULT 0,
+          added_at INTEGER DEFAULT 0,
+          FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE,
           FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
         );
       `);
@@ -438,6 +499,8 @@ class DatabaseService {
                 await tx.executeSql('DELETE FROM media_files');
                 await tx.executeSql('DELETE FROM cache_metadata');
                 await tx.executeSql('DELETE FROM favorites');
+                await tx.executeSql('DELETE FROM playlist_items');
+                await tx.executeSql('DELETE FROM playlists');
             });
             console.log("✅ Cache cleared");
         } catch (error) {
@@ -631,6 +694,150 @@ class DatabaseService {
         } catch (error) {
             console.error("❌ Error getting favorites:", error);
             return [];
+        }
+    }
+
+    // ==================== PLAYLIST METHODS ====================
+
+    async createPlaylist(name: string): Promise<string> {
+        await this.init();
+        if (!this.db) throw new Error("Database not initialized");
+
+        const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const now = Date.now();
+
+        try {
+            await this.db.executeSql(
+                `INSERT INTO playlists (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)`,
+                [id, name, now, now]
+            );
+            console.log(`✅ Playlist created: ${name} (${id})`);
+            return id;
+        } catch (error) {
+            console.error("❌ Error creating playlist:", error);
+            throw error;
+        }
+    }
+
+    async deletePlaylist(id: string): Promise<void> {
+        await this.init();
+        if (!this.db) return;
+
+        try {
+            await this.db.executeSql(`DELETE FROM playlists WHERE id = ?`, [id]);
+            console.log(`🗑️ Playlist deleted: ${id}`);
+        } catch (error) {
+            console.error("❌ Error deleting playlist:", error);
+            throw error;
+        }
+    }
+
+    async getPlaylists(): Promise<any[]> {
+        await this.init();
+        if (!this.db) return [];
+
+        try {
+            const [results] = await this.db.executeSql(
+                `SELECT p.*, COUNT(pi.id) as item_count 
+                 FROM playlists p
+                 LEFT JOIN playlist_items pi ON p.id = pi.playlist_id
+                 GROUP BY p.id
+                 ORDER BY p.created_at DESC`
+            );
+
+            const playlists = [];
+            for (let i = 0; i < results.rows.length; i++) {
+                playlists.push(results.rows.item(i));
+            }
+            return playlists;
+        } catch (error) {
+            console.error("❌ Error getting playlists:", error);
+            return [];
+        }
+    }
+
+    async getPlaylistItems(playlistId: string): Promise<MediaFile[]> {
+        await this.init();
+        if (!this.db) return [];
+
+        try {
+            const [results] = await this.db.executeSql(
+                `SELECT m.* FROM media_files m
+                 INNER JOIN playlist_items pi ON m.id = pi.media_id
+                 WHERE pi.playlist_id = ?
+                 ORDER BY pi.position ASC, pi.added_at ASC`,
+                [playlistId]
+            );
+
+            const files: MediaFile[] = [];
+            for (let i = 0; i < results.rows.length; i++) {
+                const item = results.rows.item(i) as DbMediaFile;
+                files.push({
+                    id: item.id,
+                    filename: item.name,
+                    name: item.name,
+                    title: item.title || item.name,
+                    path: item.path,
+                    extension: item.extension,
+                    type: item.type,
+                    size: item.size,
+                    dateAdded: item.created_at,
+                    lastModified: item.updated_at,
+                });
+            }
+            return files;
+        } catch (error) {
+            console.error("❌ Error getting playlist items:", error);
+            return [];
+        }
+    }
+
+    async addMediaToPlaylist(playlistId: string, mediaId: string): Promise<void> {
+        await this.init();
+        if (!this.db) return;
+
+        const id = Math.random().toString(36).substring(2, 15);
+        const now = Date.now();
+
+        try {
+            // Get current max position
+            const [posResult] = await this.db.executeSql(
+                `SELECT MAX(position) as maxPos FROM playlist_items WHERE playlist_id = ?`,
+                [playlistId]
+            );
+            const position = (posResult.rows.item(0).maxPos || 0) + 1;
+
+            await this.db.executeSql(
+                `INSERT INTO playlist_items (id, playlist_id, media_id, position, added_at) VALUES (?, ?, ?, ?, ?)`,
+                [id, playlistId, mediaId, position, now]
+            );
+
+            // Update playlist updated_at
+            await this.db.executeSql(
+                `UPDATE playlists SET updated_at = ? WHERE id = ?`,
+                [now, playlistId]
+            );
+
+            console.log(`✅ Added media ${mediaId} to playlist ${playlistId}`);
+        } catch (error) {
+            console.error("❌ Error adding to playlist:", error);
+            throw error;
+        }
+    }
+
+    async removeMediaFromPlaylist(playlistId: string, mediaId: string): Promise<void> {
+        await this.init();
+        if (!this.db) return;
+
+        try {
+            await this.db.executeSql(
+                `DELETE FROM playlist_items WHERE playlist_id = ? AND media_id = ?`,
+                [playlistId, mediaId]
+            );
+            console.log(`🗑️ Removed media ${mediaId} from playlist ${playlistId}`);
+        } catch (error) {
+            console.error("❌ Error removing from playlist:", error);
+            throw error;
         }
     }
 }

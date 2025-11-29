@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import SettingsModal from './SettingsModal';
 
-type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders';
+type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders' | 'playlists';
 
 interface Section {
   id: SectionId;
@@ -38,6 +38,7 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
     { id: 'video', icon: '🎬', label: 'Video' },
     { id: 'favorites', icon: '❤️', label: 'Favoritos' },
     { id: 'folders', icon: '📁', label: 'Carpetas' },
+    { id: 'playlists', icon: '📑', label: 'Listas' },
   ];
 
   return (

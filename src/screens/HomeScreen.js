@@ -19,6 +19,8 @@ import MediaService from '../services/MediaService';
 import PermissionsService from '../services/PermissionsService';
 import FavoritesService from '../services/FavoritesService';
 import FolderList from '../components/FolderList';
+import PlaylistList from '../components/PlaylistList';
+import PlaylistDetail from '../components/PlaylistDetail';
 import { useVideo } from '../context/VideoContext';
 
 const HomeScreen = ({ navigation }) => {
@@ -32,6 +34,7 @@ const HomeScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [showLibraryPanel, setShowLibraryPanel] = useState(true);
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const { playVideo } = useVideo();
 
   useEffect(() => {
@@ -39,6 +42,9 @@ const HomeScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
+    if (activeSection !== 'playlists') {
+      setSelectedPlaylist(null);
+    }
     if (activeSection === 'favorites') {
       loadFavorites();
     }
@@ -187,6 +193,8 @@ const HomeScreen = ({ navigation }) => {
         return 'Carpetas';
       case 'favorites':
         return 'Favoritos';
+      case 'playlists':
+        return selectedPlaylist ? selectedPlaylist.name : 'Listas de reproducción';
       default:
         return 'Inicio';
     }
@@ -244,11 +252,13 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.headerLeft}>
               <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
               <Text style={styles.headerSubtitle}>
-                {currentMedia.length} archivos
+                {activeSection === 'playlists' && !selectedPlaylist
+                  ? 'Tus colecciones'
+                  : `${currentMedia.length} archivos`}
               </Text>
             </View>
             <View style={styles.headerRight}>
-              {currentMedia.length > 0 && activeSection !== 'folders' && (
+              {currentMedia.length > 0 && activeSection !== 'folders' && activeSection !== 'playlists' && (
                 <TouchableOpacity
                   style={styles.headerButtonPrimary}
                   activeOpacity={0.7}
@@ -280,6 +290,26 @@ const HomeScreen = ({ navigation }) => {
                   />
                 }
               />
+            ) : activeSection === 'playlists' ? (
+              selectedPlaylist ? (
+                <PlaylistDetail
+                  playlist={selectedPlaylist}
+                  onBack={() => setSelectedPlaylist(null)}
+                  onItemPress={handleMediaPress}
+                />
+              ) : (
+                <PlaylistList
+                  onPlaylistPress={setSelectedPlaylist}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      tintColor="#1DB954"
+                      colors={['#1DB954']}
+                    />
+                  }
+                />
+              )
             ) : (
               <MediaGrid
                 items={mediaData}

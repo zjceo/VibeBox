@@ -4,74 +4,59 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
   StatusBar,
-  Alert,
+  Image,
+  TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
-
-const { width } = Dimensions.get('window');
 import PlayerControls from '../components/PlayerControls';
 import LoadingScreen from '../components/LoadingScreen';
 import AudioPlayerService from '../services/AudioPlayerService';
 import FavoritesService from '../services/FavoritesService';
+import AddToPlaylistModal from '../components/AddToPlaylistModal';
 import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents } from 'react-native-track-player';
+
+const { width } = Dimensions.get('window');
 
 const AudioPlayerScreen = ({ route, navigation }) => {
   const { track, playlist = [] } = route.params;
-
-  const [currentTrack, setCurrentTrack] = useState(track);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [currentTrack, setCurrentTrack] = useState(track);
   const [loading, setLoading] = useState(true);
   const [repeatMode, setRepeatMode] = useState('off');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
 
   useEffect(() => {
     initializePlayer();
     checkFavoriteStatus();
-
-    return () => {
-      AudioPlayerService.pause();
-    };
   }, []);
 
   useEffect(() => {
     checkFavoriteStatus();
   }, [currentTrack]);
 
-  // Actualizar progreso
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (isPlaying) {
-        const progress = await AudioPlayerService.getProgress();
-        setPosition(progress.position);
-        if (progress.duration > 0) {
-          setDuration(progress.duration);
-        }
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
-  // Track Player Events
-  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackActiveTrackChanged], async (event) => {
+  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackProgress, Event.PlaybackTrackChanged], async (event) => {
     if (event.type === Event.PlaybackState) {
-      const state = await AudioPlayerService.getState();
-      setIsPlaying(state === State.Playing);
+      setIsPlaying(event.state === State.Playing);
     }
-
-    if (event.type === Event.PlaybackActiveTrackChanged) {
-      const trackIndex = await TrackPlayer.getActiveTrackIndex();
-      if (trackIndex != null) {
-        setCurrentIndex(trackIndex);
-        const trackObject = await TrackPlayer.getTrack(trackIndex);
-        const fullTrack = playlist.find(t => t.id === trackObject.id);
+    if (event.type === Event.PlaybackProgress) {
+      setPosition(event.position);
+      setDuration(event.duration);
+    }
+    if (event.type === Event.PlaybackTrackChanged) {
+      if (event.nextTrack !== undefined) {
+        const trackId = await TrackPlayer.getTrack(event.nextTrack);
+        // Find full track info from playlist
+        const fullTrack = playlist.find(t => t.id === trackId?.id) || trackId;
         if (fullTrack) {
           setCurrentTrack(fullTrack);
+          const index = playlist.findIndex(t => t.id === fullTrack.id);
+          setCurrentIndex(index !== -1 ? index : 0);
         }
       }
     }
@@ -278,10 +263,17 @@ const AudioPlayerScreen = ({ route, navigation }) => {
 
         <TouchableOpacity
           style={styles.iconButton}
+          onPress={() => setShowPlaylistModal(true)}
           activeOpacity={0.7}>
-          <Text style={styles.iconText}>⋯</Text>
+          <Text style={styles.iconText}>⋮</Text>
         </TouchableOpacity>
       </View>
+
+      <AddToPlaylistModal
+        visible={showPlaylistModal}
+        onClose={() => setShowPlaylistModal(false)}
+        track={currentTrack}
+      />
     </SafeAreaView>
   );
 };
