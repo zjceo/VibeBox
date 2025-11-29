@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import CompactSidebar from '../components/CompactSidebar';
 import LibraryPanel from '../components/LibraryPanel';
@@ -27,6 +28,9 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
+
+  const { width } = useWindowDimensions();
+  const showLibraryPanel = width > 768; // Only show on tablets/desktop
 
   useEffect(() => {
     checkPermissionsAndLoadMedia();
@@ -189,8 +193,8 @@ const HomeScreen = ({ navigation }) => {
           onSectionChange={setActiveSection}
         />
 
-        {/* Library Panel - Solo mostrar en la sección 'home' */}
-        {activeSection === 'home' && (
+        {/* Library Panel - Solo mostrar en la sección 'home' y pantallas grandes */}
+        {activeSection === 'home' && showLibraryPanel && (
           <LibraryPanel
             mediaFiles={mediaFiles}
             onMediaPress={handleMediaPress}

@@ -6,14 +6,30 @@ import {
   SectionList,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
-// Calculamos el ancho de las tarjetas considerando: sidebar (80) + panel (320) + padding lateral (64) + gaps entre tarjetas (40)
-const CARD_WIDTH = (width - 80 - 320 - 64 - 40) / 3;
-
 const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, grouped = false }) => {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
+  // Calculate available width and columns
+  // Sidebar is 80 (portrait) or 70 (landscape)
+  // LibraryPanel is 320 (only on home, but let's assume worst case or pass a prop if needed)
+  // For now, let's assume full width minus sidebar and padding
+
+  const sidebarWidth = isLandscape ? 70 : 80;
+  const containerPadding = 48; // 24 * 2
+  const gap = 20;
+
+  // Determine number of columns based on available width
+  // Minimum card width ~160px
+  const availableWidth = width - sidebarWidth - containerPadding;
+  const minCardWidth = 160;
+  const numColumns = Math.max(2, Math.floor(availableWidth / (minCardWidth + gap)));
+
+  const cardWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
+
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -24,7 +40,7 @@ const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, gr
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { width: cardWidth }]}
       onPress={() => onItemPress && onItemPress(item)}
       activeOpacity={0.8}>
       {/* Thumbnail */}
@@ -89,14 +105,14 @@ const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, gr
         sections={validItems}
         keyExtractor={(item, index) => item.id || `item-${index}`}
         renderItem={({ item, index, section }) => {
-          if (index % 3 !== 0) return null;
+          if (index % numColumns !== 0) return null;
 
-          const rowItems = section.data.slice(index, index + 3);
+          const rowItems = section.data.slice(index, index + numColumns);
 
           return (
-            <View style={styles.row}>
+            <View style={[styles.row, { gap: gap }]}>
               {rowItems.map((rowItem, idx) => (
-                <View key={rowItem.id || `row-item-${idx}`} style={{ width: CARD_WIDTH, marginRight: 20 }}>
+                <View key={rowItem.id || `row-item-${idx}`}>
                   {renderItem({ item: rowItem })}
                 </View>
               ))}
@@ -115,12 +131,13 @@ const MediaGrid = ({ items = [], onItemPress, type = 'video', refreshControl, gr
 
   return (
     <FlatList
+      key={`grid-${numColumns}`} // Force re-render on column change
       data={validItems}
       renderItem={renderItem}
       keyExtractor={(item, index) => item.id || `item-${index}`}
-      numColumns={3}
+      numColumns={numColumns}
       contentContainerStyle={validItems.length === 0 ? styles.emptyList : styles.gridContent}
-      columnWrapperStyle={validItems.length > 0 ? styles.row : null}
+      columnWrapperStyle={validItems.length > 0 ? [styles.row, { gap: gap }] : null}
       ListEmptyComponent={renderEmpty}
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
