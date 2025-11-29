@@ -24,7 +24,8 @@
     "react-native-screens": "^3.37.0",
     "react-native-sqlite-storage": "^6.0.1",
     "react-native-track-player": "^4.1.2",
-    "react-native-video": "^6.17.0"
+    "react-native-video": "^6.17.0",
+    "react-native-video-player": "^0.16.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -11,9 +11,10 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Animated,
 } from 'react-native';
 import Video from 'react-native-video';
-import PlayerControls from '../components/PlayerControls';
+import Slider from '@react-native-community/slider';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const { video, playlist = [] } = route.params;
   const videoRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const [currentVideo, setCurrentVideo] = useState(video);
   const [currentIndex, setCurrentIndex] = useState(
@@ -36,11 +38,21 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isSeeking, setIsSeeking] = useState(false);
 
-  // Auto-ocultar controles
+  // Auto-ocultar controles con animación
   useEffect(() => {
     if (showControls && !paused && !isSeeking) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+
       controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => setShowControls(false));
       }, 4000);
     }
     return () => {
@@ -69,16 +81,6 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleSeekStart = () => {
-    setIsSeeking(true);
-    resetControlsTimeout();
-  };
-
-  const handleSeekEnd = () => {
-    setIsSeeking(false);
-    resetControlsTimeout();
-  };
-
   const handleProgress = (data) => {
     if (!isSeeking) {
       setCurrentTime(data.currentTime);
@@ -91,11 +93,6 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     setError(null);
   };
 
-  const handleLoadStart = () => {
-    setLoading(true);
-    setError(null);
-  };
-
   const handleError = (err) => {
     console.error('Video error:', err);
     setError('Error al cargar el video');
@@ -103,15 +100,16 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   };
 
   const toggleControls = () => {
-    setShowControls(!showControls);
+    if (!showControls) {
+      setShowControls(true);
+      resetControlsTimeout();
+    }
   };
 
   const handleEnd = () => {
     if (currentIndex < playlist.length - 1) {
-      // Reproducir siguiente video automáticamente
       playNextVideo();
     } else {
-      // Si es el último, pausar y mostrar controles
       setPaused(true);
       setShowControls(true);
       if (videoRef.current) {
@@ -123,66 +121,46 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const playNextVideo = () => {
     if (currentIndex < playlist.length - 1) {
       const nextIndex = currentIndex + 1;
-      const nextVideo = playlist[nextIndex];
-      setCurrentVideo(nextVideo);
+      setCurrentVideo(playlist[nextIndex]);
       setCurrentIndex(nextIndex);
       setCurrentTime(0);
-      setDuration(0);
       setPaused(false);
       setLoading(true);
-      resetControlsTimeout();
     }
   };
 
   const playPreviousVideo = () => {
     if (currentTime > 3) {
-      // Si llevamos más de 3 segundos, reiniciar video actual
       handleSeek(0);
     } else if (currentIndex > 0) {
-      // Si no, ir al video anterior
       const prevIndex = currentIndex - 1;
-      const prevVideo = playlist[prevIndex];
-      setCurrentVideo(prevVideo);
+      setCurrentVideo(playlist[prevIndex]);
       setCurrentIndex(prevIndex);
       setCurrentTime(0);
-      setDuration(0);
       setPaused(false);
       setLoading(true);
-      resetControlsTimeout();
     }
   };
 
-  const selectVideo = (video, index) => {
-    setCurrentVideo(video);
+  const selectVideo = (item, index) => {
+    setCurrentVideo(item);
     setCurrentIndex(index);
     setCurrentTime(0);
-    setDuration(0);
     setPaused(false);
     setLoading(true);
     setShowPlaylist(false);
-    resetControlsTimeout();
   };
 
   const skipTime = (seconds) => {
     const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
     handleSeek(newTime);
-    resetControlsTimeout();
   };
 
   const changePlaybackSpeed = () => {
     const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-    const currentSpeedIndex = speeds.indexOf(playbackRate);
-    const nextSpeed = speeds[(currentSpeedIndex + 1) % speeds.length];
+    const currentIndex = speeds.indexOf(playbackRate);
+    const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
     setPlaybackRate(nextSpeed);
-    resetControlsTimeout();
-  };
-
-  const goBack = () => {
-    if (videoRef.current) {
-      videoRef.current.seek(0);
-      setPaused(true);
-    }
-    navigation.goBack();
   };
 
   const formatTime = (seconds) => {
@@ -201,18 +179,16 @@ const VideoPlayerScreen = ({ route, navigation }) => {
           <Text style={styles.errorSubtext}>{currentVideo.name}</Text>
           <View style={styles.errorButtons}>
             <TouchableOpacity
-              style={[styles.errorButton, styles.retryButton]}
+              style={styles.errorButton}
               onPress={() => {
                 setError(null);
                 setLoading(true);
-              }}
-              activeOpacity={0.7}>
+              }}>
               <Text style={styles.errorButtonText}>Reintentar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.errorButton}
-              onPress={goBack}
-              activeOpacity={0.7}>
+              style={[styles.errorButton, styles.backErrorButton]}
+              onPress={() => navigation.goBack()}>
               <Text style={styles.errorButtonText}>Volver</Text>
             </TouchableOpacity>
           </View>
@@ -234,129 +210,123 @@ const VideoPlayerScreen = ({ route, navigation }) => {
             paused={paused}
             onProgress={handleProgress}
             onLoad={handleLoad}
-            onLoadStart={handleLoadStart}
             onError={handleError}
             onEnd={handleEnd}
             resizeMode="contain"
-            controls={false}
-            repeat={false}
             rate={playbackRate}
-            playInBackground={true}
-            playWhenInactive={true}
-            ignoreSilentSwitch="ignore"
           />
 
-          {/* Loading Indicator */}
           {loading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#1DB954" />
-              <Text style={styles.loadingText}>Cargando video...</Text>
+              <Text style={styles.loadingText}>Cargando...</Text>
             </View>
           )}
 
-          {/* Controls Overlay */}
           {showControls && !loading && (
-            <View style={styles.controlsOverlay}>
+            <Animated.View style={[styles.controlsOverlay, { opacity: fadeAnim }]}>
               {/* Top Bar */}
               <View style={styles.topBar}>
                 <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={goBack}
-                  activeOpacity={0.7}>
-                  <Text style={styles.backIcon}>←</Text>
+                  style={styles.iconButton}
+                  onPress={() => navigation.goBack()}>
+                  <Text style={styles.icon}>←</Text>
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
-                  <Text style={styles.videoTitle} numberOfLines={1}>
+                  <Text style={styles.title} numberOfLines={1}>
                     {currentVideo.name}
                   </Text>
                   {playlist.length > 1 && (
-                    <Text style={styles.videoSubtitle}>
-                      {currentIndex + 1} de {playlist.length}
+                    <Text style={styles.subtitle}>
+                      {currentIndex + 1} / {playlist.length}
                     </Text>
                   )}
                 </View>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={changePlaybackSpeed}>
+                  <Text style={styles.speedText}>{playbackRate}x</Text>
+                </TouchableOpacity>
                 {playlist.length > 1 && (
                   <TouchableOpacity
-                    style={styles.playlistButton}
-                    onPress={() => setShowPlaylist(true)}
-                    activeOpacity={0.7}>
-                    <Text style={styles.playlistIcon}>☰</Text>
+                    style={styles.iconButton}
+                    onPress={() => setShowPlaylist(true)}>
+                    <Text style={styles.icon}>☰</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
-              {/* Center Controls */}
+              {/* Center Play Button */}
               <View style={styles.centerControls}>
-                {playlist.length > 1 && currentIndex > 0 && (
+                {currentIndex > 0 && (
                   <TouchableOpacity
-                    style={styles.skipButton}
-                    onPress={playPreviousVideo}
-                    activeOpacity={0.7}>
-                    <Text style={styles.skipIcon}>⏮</Text>
+                    style={styles.controlButton}
+                    onPress={playPreviousVideo}>
+                    <Text style={styles.controlIcon}>⏮</Text>
                   </TouchableOpacity>
                 )}
-
                 <TouchableOpacity
-                  style={styles.centerPlayButton}
-                  onPress={handlePlayPause}
-                  activeOpacity={0.7}>
-                  <Text style={styles.centerPlayIcon}>{paused ? '▶' : '⏸'}</Text>
+                  style={styles.mainPlayButton}
+                  onPress={handlePlayPause}>
+                  <Text style={styles.mainPlayIcon}>
+                    {paused ? '▶' : '⏸'}
+                  </Text>
                 </TouchableOpacity>
-
-                {playlist.length > 1 && currentIndex < playlist.length - 1 && (
+                {currentIndex < playlist.length - 1 && (
                   <TouchableOpacity
-                    style={styles.skipButton}
-                    onPress={playNextVideo}
-                    activeOpacity={0.7}>
-                    <Text style={styles.skipIcon}>⏭</Text>
+                    style={styles.controlButton}
+                    onPress={playNextVideo}>
+                    <Text style={styles.controlIcon}>⏭</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Bottom Controls */}
-              <View style={styles.bottomControls}>
-                <View style={styles.speedControl}>
-                  <TouchableOpacity
-                    style={styles.speedButton}
-                    onPress={changePlaybackSpeed}
-                    activeOpacity={0.7}>
-                    <Text style={styles.speedText}>{playbackRate}x</Text>
-                  </TouchableOpacity>
+              <View style={styles.bottomBar}>
+                <View style={styles.progressContainer}>
+                  <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={0}
+                    maximumValue={duration}
+                    value={currentTime}
+                    onValueChange={(value) => {
+                      setIsSeeking(true);
+                      setCurrentTime(value);
+                    }}
+                    onSlidingComplete={(value) => {
+                      setIsSeeking(false);
+                      handleSeek(value);
+                    }}
+                    minimumTrackTintColor="#1DB954"
+                    maximumTrackTintColor="rgba(255,255,255,0.3)"
+                    thumbTintColor="#1DB954"
+                  />
+                  <Text style={styles.timeText}>{formatTime(duration)}</Text>
                 </View>
-
-                <PlayerControls
-                  isPlaying={!paused}
-                  onPlayPause={handlePlayPause}
-                  onSeek={handleSeek}
-                  onSeekStart={handleSeekStart}
-                  onSeekEnd={handleSeekEnd}
-                  position={currentTime}
-                  duration={duration}
-                  showSkipButtons={false}
-                />
               </View>
-            </View>
+            </Animated.View>
           )}
 
-          {/* Tap Areas for Seeking (solo cuando controles ocultos) */}
+          {/* Tap Zones para Skip */}
           {!showControls && !loading && (
             <>
               <TouchableOpacity
-                style={[styles.tapArea, styles.tapAreaLeft]}
+                style={[styles.tapZone, styles.tapZoneLeft]}
                 onPress={() => skipTime(-10)}
-                activeOpacity={1}>
-                <View style={styles.tapIndicator}>
-                  <Text style={styles.tapIcon}>⏪</Text>
-                  <Text style={styles.tapText}>10s</Text>
+                activeOpacity={0.9}>
+                <View style={styles.skipIndicator}>
+                  <Text style={styles.skipIcon}>⏪</Text>
+                  <Text style={styles.skipText}>-10s</Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tapArea, styles.tapAreaRight]}
+                style={[styles.tapZone, styles.tapZoneRight]}
                 onPress={() => skipTime(10)}
-                activeOpacity={1}>
-                <View style={styles.tapIndicator}>
-                  <Text style={styles.tapIcon}>⏩</Text>
-                  <Text style={styles.tapText}>10s</Text>
+                activeOpacity={0.9}>
+                <View style={styles.skipIndicator}>
+                  <Text style={styles.skipIcon}>⏩</Text>
+                  <Text style={styles.skipText}>+10s</Text>
                 </View>
               </TouchableOpacity>
             </>
@@ -367,7 +337,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
       {/* Playlist Modal */}
       <Modal
         visible={showPlaylist}
-        transparent={true}
+        transparent
         animationType="slide"
         onRequestClose={() => setShowPlaylist(false)}>
         <View style={styles.modalContainer}>
@@ -376,13 +346,10 @@ const VideoPlayerScreen = ({ route, navigation }) => {
               <Text style={styles.playlistTitle}>
                 Lista de reproducción ({playlist.length})
               </Text>
-              <TouchableOpacity
-                onPress={() => setShowPlaylist(false)}
-                activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => setShowPlaylist(false)}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-
             <FlatList
               data={playlist}
               keyExtractor={(item) => item.id}
@@ -392,23 +359,22 @@ const VideoPlayerScreen = ({ route, navigation }) => {
                     styles.playlistItem,
                     index === currentIndex && styles.playlistItemActive,
                   ]}
-                  onPress={() => selectVideo(item, index)}
-                  activeOpacity={0.7}>
-                  <View style={styles.playlistItemNumber}>
+                  onPress={() => selectVideo(item, index)}>
+                  <View style={styles.playlistItemLeft}>
                     <Text style={[
-                      styles.playlistItemNumberText,
-                      index === currentIndex && styles.playlistItemActiveText,
+                      styles.playlistNumber,
+                      index === currentIndex && styles.activeText,
                     ]}>
                       {index + 1}
                     </Text>
                   </View>
-                  <View style={styles.playlistItemInfo}>
+                  <View style={styles.playlistItemCenter}>
                     <Text
                       style={[
                         styles.playlistItemTitle,
-                        index === currentIndex && styles.playlistItemActiveText,
+                        index === currentIndex && styles.activeText,
                       ]}
-                      numberOfLines={1}>
+                      numberOfLines={2}>
                       {item.name}
                     </Text>
                     <Text style={styles.playlistItemSubtitle}>
@@ -431,164 +397,153 @@ const VideoPlayerScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#000',
   },
   videoContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: '#000',
   },
   video: {
-    width: width,
-    height: height,
+    width,
+    height,
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.9)',
   },
   loadingText: {
-    marginTop: 16,
+    color: '#fff',
+    marginTop: 12,
     fontSize: 16,
-    color: '#ffffff',
   },
   controlsOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'space-between',
-    zIndex: 5,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 16,
+    paddingTop: 20,
+    gap: 12,
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
   },
-  backIcon: {
-    fontSize: 24,
-    color: '#ffffff',
+  icon: {
+    fontSize: 22,
+    color: '#fff',
+  },
+  speedText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
   titleContainer: {
     flex: 1,
-    paddingHorizontal: 16,
   },
-  videoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+  title: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
   },
-  videoSubtitle: {
-    fontSize: 12,
+  subtitle: {
+    fontSize: 13,
     color: '#b3b3b3',
     marginTop: 2,
-  },
-  playlistButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-  },
-  playlistIcon: {
-    fontSize: 20,
-    color: '#ffffff',
   },
   centerControls: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 40,
+    gap: 32,
   },
-  skipButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  controlButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  skipIcon: {
+  controlIcon: {
     fontSize: 24,
-    color: '#ffffff',
+    color: '#fff',
   },
-  centerPlayButton: {
+  mainPlayButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(29, 185, 84, 0.95)',
+    backgroundColor: '#1DB954',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#1DB954',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.5,
     shadowRadius: 8,
     elevation: 8,
   },
-  centerPlayIcon: {
+  mainPlayIcon: {
     fontSize: 32,
-    color: '#ffffff',
-    marginLeft: 2,
+    color: '#fff',
   },
-  bottomControls: {
-    paddingBottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  bottomBar: {
+    padding: 16,
+    paddingBottom: 24,
   },
-  speedControl: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    alignItems: 'flex-end',
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  speedButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
+  slider: {
+    flex: 1,
+    height: 40,
   },
-  speedText: {
-    fontSize: 12,
-    color: '#ffffff',
+  timeText: {
+    fontSize: 13,
+    color: '#fff',
     fontWeight: '600',
+    minWidth: 45,
+    textAlign: 'center',
   },
-  tapArea: {
+  tapZone: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    width: '35%',
+    width: '30%',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tapAreaLeft: {
+  tapZoneLeft: {
     left: 0,
   },
-  tapAreaRight: {
+  tapZoneRight: {
     right: 0,
   },
-  tapIndicator: {
+  skipIndicator: {
     alignItems: 'center',
-    opacity: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 16,
+    borderRadius: 12,
   },
-  tapIcon: {
-    fontSize: 32,
-    color: '#ffffff',
+  skipIcon: {
+    fontSize: 28,
+    color: '#fff',
   },
-  tapText: {
+  skipText: {
     fontSize: 14,
-    color: '#ffffff',
+    color: '#fff',
     marginTop: 4,
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
@@ -602,7 +557,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#ffffff',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -622,24 +577,24 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 25,
   },
-  retryButton: {
-    backgroundColor: '#3a3a3a',
+  backErrorButton: {
+    backgroundColor: '#333',
   },
   errorButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#fff',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'flex-end',
   },
   playlistContainer: {
-    backgroundColor: '#1a1a1a',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
+    backgroundColor: '#121212',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '75%',
   },
   playlistHeader: {
     flexDirection: 'row',
@@ -647,61 +602,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   playlistTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#fff',
   },
   closeButton: {
-    fontSize: 24,
-    color: '#ffffff',
+    fontSize: 28,
+    color: '#fff',
   },
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   playlistItemActive: {
-    backgroundColor: 'rgba(29, 185, 84, 0.1)',
+    backgroundColor: 'rgba(29,185,84,0.15)',
+    borderLeftWidth: 4,
+    borderLeftColor: '#1DB954',
   },
-  playlistItemNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
+  playlistItemLeft: {
+    width: 40,
     alignItems: 'center',
-    marginRight: 16,
   },
-  playlistItemNumberText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#b3b3b3',
+  playlistNumber: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#666',
   },
-  playlistItemInfo: {
+  playlistItemCenter: {
     flex: 1,
+    marginLeft: 12,
   },
   playlistItemTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
     marginBottom: 4,
   },
   playlistItemSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#b3b3b3',
   },
-  playlistItemActiveText: {
+  activeText: {
     color: '#1DB954',
   },
   playingIcon: {
     fontSize: 16,
     color: '#1DB954',
-    marginLeft: 8,
   },
 });
 
