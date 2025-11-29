@@ -10,15 +10,56 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { RootStackNavigationProp } from '../types';
 
-const SettingsModal = ({ visible, onClose, onRescan }) => {
-  const navigation = useNavigation();
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [notifications, setNotifications] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
-  const [highQuality, setHighQuality] = useState(true);
+/**
+ * Props del componente SettingsModal
+ */
+interface SettingsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onRescan?: () => void;
+}
 
-  const handleRescanMedia = () => {
+/**
+ * Props de un item de configuración con Switch
+ */
+interface SettingItemProps {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  rightComponent: React.ReactNode;
+}
+
+/**
+ * Props de un item de acción (botones)
+ */
+interface ActionItemProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}
+
+/**
+ * Props del encabezado de sección
+ */
+interface SectionHeaderProps {
+  title: string;
+}
+
+const SettingsModal: React.FC<SettingsModalProps> = ({
+  visible,
+  onClose,
+  onRescan
+}) => {
+  const navigation = useNavigation<RootStackNavigationProp>();
+  const [autoPlay, setAutoPlay] = useState<boolean>(true);
+  const [notifications, setNotifications] = useState<boolean>(false);
+  const [darkMode, setDarkMode] = useState<boolean>(true);
+  const [highQuality, setHighQuality] = useState<boolean>(true);
+
+  const handleRescanMedia = (): void => {
     Alert.alert(
       'Escanear archivos',
       '¿Quieres buscar nuevos archivos multimedia en tu dispositivo?',
@@ -37,7 +78,7 @@ const SettingsModal = ({ visible, onClose, onRescan }) => {
     );
   };
 
-  const handleClearCache = () => {
+  const handleClearCache = (): void => {
     Alert.alert(
       'Limpiar caché',
       '¿Estás seguro? Esto eliminará archivos temporales.',
@@ -55,7 +96,12 @@ const SettingsModal = ({ visible, onClose, onRescan }) => {
     );
   };
 
-  const SettingItem = ({ icon, title, subtitle, rightComponent }) => (
+  const SettingItem: React.FC<SettingItemProps> = ({
+    icon,
+    title,
+    subtitle,
+    rightComponent
+  }) => (
     <View style={styles.settingItem}>
       <View style={styles.settingLeft}>
         <Text style={styles.settingIcon}>{icon}</Text>
@@ -70,7 +116,7 @@ const SettingsModal = ({ visible, onClose, onRescan }) => {
     </View>
   );
 
-  const SectionHeader = ({ title }) => (
+  const SectionHeader: React.FC<SectionHeaderProps> = ({ title }) => (
     <Text style={styles.sectionHeader}>{title}</Text>
   );
 

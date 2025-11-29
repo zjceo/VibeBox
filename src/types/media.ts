@@ -1,0 +1,63 @@
+// src/types/media.ts
+
+/**
+ * Tipo de archivo multimedia
+ */
+export type MediaType = 'audio' | 'video';
+
+/**
+ * Información de un archivo multimedia
+ */
+export interface MediaFile {
+    id: string;
+    filename: string;
+    path: string;
+    type: MediaType;
+    duration?: number;
+    size: number;
+    dateAdded: number;
+    lastModified: number;
+    title?: string;
+    artist?: string;
+    album?: string;
+    artwork?: string;
+    thumbnail?: string;
+}
+
+/**
+ * Categoría de medios (para tabs)
+ */
+export type MediaCategory = 'all' | 'audio' | 'video';
+
+/**
+ * Estado de escaneo de medios
+ */
+export interface ScanStatus {
+    isScanning: boolean;
+    progress: number;
+    totalFiles: number;
+    scannedFiles: number;
+    message?: string;
+}
+
+/**
+ * Filtros de búsqueda
+ */
+export interface MediaFilters {
+    query: string;
+    type?: MediaType;
+    sortBy?: 'name' | 'date' | 'size' | 'duration';
+    sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Estadísticas de la biblioteca
+ */
+export interface LibraryStats {
+    totalFiles: number;
+    audioFiles: number;
+    videoFiles: number;
+    totalSize: number;
+    totalDuration: number;
+    lastScanDate?: number;
+}
