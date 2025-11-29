@@ -10,7 +10,8 @@ import TrackPlayer, {
 
 interface AudioTrack {
   id: string;
-  uri: string;
+  uri?: string;
+  path?: string;
   name?: string;
   artist?: string;
   album?: string;
@@ -105,9 +106,17 @@ class AudioPlayerService {
 
   async addTrack(track: AudioTrack): Promise<void> {
     try {
+      // Determinar la URL correcta (uri o path)
+      let url = track.uri || track.path || '';
+
+      // Asegurar prefijo file:// para rutas locales si no lo tienen
+      if (url && !url.startsWith('http') && !url.startsWith('file://')) {
+        url = `file://${url}`;
+      }
+
       await TrackPlayer.add({
         id: track.id,
-        url: track.uri,
+        url: url,
         title: track.name || 'Sin título',
         artist: track.artist || 'Artista desconocido',
         album: track.album || 'Álbum desconocido',
@@ -122,15 +131,25 @@ class AudioPlayerService {
 
   async addTracks(tracks: AudioTrack[]): Promise<void> {
     try {
-      const formattedTracks: Track[] = tracks.map(track => ({
-        id: track.id,
-        url: track.uri,
-        title: track.name || 'Sin título',
-        artist: track.artist || 'Artista desconocido',
-        album: track.album || 'Álbum desconocido',
-        artwork: track.artwork,
-        duration: track.duration || 0,
-      }));
+      const formattedTracks: Track[] = tracks.map(track => {
+        // Determinar la URL correcta (uri o path)
+        let url = track.uri || track.path || '';
+
+        // Asegurar prefijo file:// para rutas locales si no lo tienen
+        if (url && !url.startsWith('http') && !url.startsWith('file://')) {
+          url = `file://${url}`;
+        }
+
+        return {
+          id: track.id,
+          url: url,
+          title: track.name || 'Sin título',
+          artist: track.artist || 'Artista desconocido',
+          album: track.album || 'Álbum desconocido',
+          artwork: track.artwork,
+          duration: track.duration || 0,
+        };
+      });
 
       await TrackPlayer.add(formattedTracks);
     } catch (error) {
