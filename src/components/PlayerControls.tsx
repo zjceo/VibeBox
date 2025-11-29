@@ -10,7 +10,18 @@ import Slider from '@react-native-community/slider';
 
 const { width } = Dimensions.get('window');
 
-const PlayerControls = ({
+interface PlayerControlsProps {
+  isPlaying: boolean;
+  onPlayPause: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  onSeek: (value: number) => void;
+  position?: number;
+  duration?: number;
+  showSkipButtons?: boolean;
+}
+
+const PlayerControls: React.FC<PlayerControlsProps> = ({
   isPlaying,
   onPlayPause,
   onNext,
@@ -20,7 +31,7 @@ const PlayerControls = ({
   duration = 0,
   showSkipButtons = true,
 }) => {
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;

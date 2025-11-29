@@ -6,7 +6,11 @@ import {
   StyleSheet,
 } from 'react-native';
 
-const LoadingScreen = ({ message = 'Cargando...' }) => {
+interface LoadingScreenProps {
+  message?: string;
+}
+
+const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Cargando...' }) => {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#1DB954" />

@@ -8,7 +8,7 @@ import {
     TouchableWithoutFeedback,
     Animated,
 } from 'react-native';
-import Video from 'react-native-video';
+import Video, { OnLoadData, OnProgressData, VideoRef } from 'react-native-video';
 import { useVideo } from '../context/VideoContext';
 import PlayerControls from './PlayerControls';
 import NativeVideoNotification from '../services/NativeVideoNotification';
@@ -16,7 +16,7 @@ import NativeVideoNotification from '../services/NativeVideoNotification';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MINI_HEIGHT = 60;
 
-const VideoOverlay = () => {
+const VideoOverlay: React.FC = () => {
     const {
         currentVideo,
         playlist,
@@ -28,19 +28,19 @@ const VideoOverlay = () => {
         setCurrentVideo,
     } = useVideo();
 
-    const videoRef = useRef(null);
-    const [paused, setPaused] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [duration, setDuration] = useState(0);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [showControls, setShowControls] = useState(true);
+    const videoRef = useRef<VideoRef>(null);
+    const [paused, setPaused] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [duration, setDuration] = useState<number>(0);
+    const [currentTime, setCurrentTime] = useState<number>(0);
+    const [showControls, setShowControls] = useState<boolean>(true);
 
     // Animaciones
     const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const minimizeAnim = useRef(new Animated.Value(0)).current;
 
     // Helper para obtener nombre del video
-    const getVideoName = (video) => {
+    const getVideoName = (video: any): string => {
         if (!video) return 'Video';
         return video.filename || video.name || video.title || 'Video';
     };
@@ -66,7 +66,7 @@ const VideoOverlay = () => {
                 NativeVideoNotification.hide();
             });
         }
-    }, [isVisible, currentVideo]);
+    }, [isVisible, currentVideo, slideAnim]);
 
     useEffect(() => {
         if (isMinimized) {
@@ -80,7 +80,7 @@ const VideoOverlay = () => {
                 useNativeDriver: false,
             }).start();
         }
-    }, [isMinimized]);
+    }, [isMinimized, minimizeAnim]);
 
     // Actualizar notificación cuando cambia el estado de reproducción
     useEffect(() => {
@@ -143,16 +143,16 @@ const VideoOverlay = () => {
         outputRange: [0, 0], // Sin offset, el MiniPlayer de audio se ocultará cuando haya video
     });
 
-    const handleLoad = (data) => {
+    const handleLoad = (data: OnLoadData): void => {
         setDuration(data.duration);
         setLoading(false);
     };
 
-    const handleProgress = (data) => {
+    const handleProgress = (data: OnProgressData): void => {
         setCurrentTime(data.currentTime);
     };
 
-    const handleEnd = () => {
+    const handleEnd = (): void => {
         const currentIndex = playlist.findIndex(v => v.id === currentVideo.id);
         if (currentIndex < playlist.length - 1) {
             setCurrentVideo(playlist[currentIndex + 1]);
@@ -161,8 +161,12 @@ const VideoOverlay = () => {
         }
     };
 
-    const togglePlayPause = () => {
+    const togglePlayPause = (): void => {
         setPaused(!paused);
+    };
+
+    const handleSeek = (value: number): void => {
+        videoRef.current?.seek(value);
     };
 
     return (
@@ -177,7 +181,9 @@ const VideoOverlay = () => {
             ]}
         >
             <View style={styles.contentContainer}>
-                <TouchableWithoutFeedback onPress={isMinimized ? maximizeVideo : () => setShowControls(!showControls)}>
+                <TouchableWithoutFeedback
+                    onPress={isMinimized ? maximizeVideo : () => setShowControls(!showControls)}
+                >
                     <Animated.View style={{ width: videoWidth, height: videoHeight, backgroundColor: 'black' }}>
                         <Video
                             ref={videoRef}
@@ -198,7 +204,9 @@ const VideoOverlay = () => {
                 {/* Mini Player Info */}
                 <Animated.View style={[styles.miniPlayerInfo, { opacity: miniControlsOpacity }]}>
                     <TouchableOpacity style={styles.miniInfoText} onPress={maximizeVideo}>
-                        <Text style={styles.miniTitle} numberOfLines={1}>{getVideoName(currentVideo)}</Text>
+                        <Text style={styles.miniTitle} numberOfLines={1}>
+                            {getVideoName(currentVideo)}
+                        </Text>
                     </TouchableOpacity>
                     <View style={styles.miniControls}>
                         <TouchableOpacity onPress={togglePlayPause} style={styles.miniButton}>
@@ -211,12 +219,20 @@ const VideoOverlay = () => {
                 </Animated.View>
 
                 {/* Full Screen Controls */}
-                <Animated.View style={[styles.fullScreenControls, { opacity: controlsOpacity }, !showControls && { opacity: 0 }]}>
+                <Animated.View
+                    style={[
+                        styles.fullScreenControls,
+                        { opacity: controlsOpacity },
+                        !showControls && { opacity: 0 }
+                    ]}
+                >
                     <View style={styles.topBar}>
                         <TouchableOpacity onPress={minimizeVideo} style={styles.iconButton}>
                             <Text style={styles.iconText}>⌄</Text>
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle} numberOfLines={1}>{getVideoName(currentVideo)}</Text>
+                        <Text style={styles.headerTitle} numberOfLines={1}>
+                            {getVideoName(currentVideo)}
+                        </Text>
                         <TouchableOpacity onPress={closeVideo} style={styles.iconButton}>
                             <Text style={styles.iconText}>✕</Text>
                         </TouchableOpacity>
@@ -234,9 +250,9 @@ const VideoOverlay = () => {
                             onPlayPause={togglePlayPause}
                             position={currentTime}
                             duration={duration}
-                            onSeek={(val) => videoRef.current?.seek(val)}
+                            onSeek={handleSeek}
                             showSkipButtons={true}
-                            onNext={() => handleEnd()}
+                            onNext={handleEnd}
                             onPrevious={() => videoRef.current?.seek(0)}
                         />
                     </View>

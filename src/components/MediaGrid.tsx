@@ -7,21 +7,36 @@ import {
   TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
+  SectionListData,
+  SectionListRenderItem,
+  ListRenderItem,
 } from 'react-native';
+import type { MediaFile } from '../types';
 
-// Componente de Card memoizado para evitar re-renders innecesarios
-const MediaCard = memo(({ item, onPress, type, cardWidth }) => {
+interface MediaCardProps {
+  item: MediaFile;
+  onPress?: (item: MediaFile) => void;
+  type: 'audio' | 'video';
+  cardWidth: number;
+}
+
+// Componente de Card memoizado
+const MediaCard = memo<MediaCardProps>(({ item, onPress, type, cardWidth }) => {
   const handlePress = useCallback(() => {
     onPress && onPress(item);
   }, [item, onPress]);
 
-  const formatFileSize = useCallback((bytes) => {
+  const formatFileSize = useCallback((bytes: number): string => {
     if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }, []);
+
+  const getItemName = (item: MediaFile): string => {
+    return item.filename || item.name || item.title || 'Sin nombre';
+  };
 
   return (
     <TouchableOpacity
@@ -52,7 +67,7 @@ const MediaCard = memo(({ item, onPress, type, cardWidth }) => {
       {/* Info */}
       <View style={styles.cardInfo}>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {item.name || 'Sin nombre'}
+          {getItemName(item)}
         </Text>
         <Text style={styles.cardSubtitle}>
           {formatFileSize(item.size)}
@@ -61,21 +76,37 @@ const MediaCard = memo(({ item, onPress, type, cardWidth }) => {
     </TouchableOpacity>
   );
 }, (prevProps, nextProps) => {
-  // Solo re-renderizar si cambia el item o el ancho
   return (
     prevProps.item.id === nextProps.item.id &&
     prevProps.cardWidth === nextProps.cardWidth
   );
 });
 
-// Componente de header de sección memoizado
-const SectionHeader = memo(({ title }) => (
+// Componente de header memoizado
+interface SectionHeaderProps {
+  title: string;
+}
+
+const SectionHeader = memo<SectionHeaderProps>(({ title }) => (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionHeaderText}>{title}</Text>
   </View>
 ));
 
-const MediaGrid = ({
+interface MediaSection {
+  title: string;
+  data: MediaFile[];
+}
+
+interface MediaGridProps {
+  items?: MediaFile[] | MediaSection[];
+  onItemPress?: (item: MediaFile) => void;
+  type?: 'audio' | 'video';
+  refreshControl?: React.ReactElement;
+  grouped?: boolean;
+}
+
+const MediaGrid: React.FC<MediaGridProps> = ({
   items = [],
   onItemPress,
   type = 'video',
@@ -85,7 +116,7 @@ const MediaGrid = ({
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
-  // Calcular dimensiones (memoizado)
+  // Calcular dimensiones
   const dimensions = useMemo(() => {
     const sidebarWidth = isLandscape ? 70 : 80;
     const containerPadding = 48;
@@ -103,13 +134,13 @@ const MediaGrid = ({
     return Array.isArray(items) ? items : [];
   }, [items]);
 
-  // Key extractor memoizado
-  const keyExtractor = useCallback((item, index) => {
+  // Key extractor
+  const keyExtractor = useCallback((item: MediaFile, index: number) => {
     return item.id || item.path || `item-${index}`;
   }, []);
 
-  // Render item memoizado
-  const renderItem = useCallback(({ item }) => (
+  // Render item
+  const renderItem: ListRenderItem<MediaFile> = useCallback(({ item }) => (
     <MediaCard
       item={item}
       onPress={onItemPress}
@@ -118,12 +149,12 @@ const MediaGrid = ({
     />
   ), [onItemPress, type, dimensions.cardWidth]);
 
-  // Render section header memoizado
-  const renderSectionHeader = useCallback(({ section: { title } }) => (
-    <SectionHeader title={title} />
+  // Render section header
+  const renderSectionHeader = useCallback(({ section }: { section: SectionListData<MediaFile, MediaSection> }) => (
+    <SectionHeader title={section.title} />
   ), []);
 
-  // Empty component memoizado
+  // Empty component
   const renderEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>
@@ -138,9 +169,9 @@ const MediaGrid = ({
     </View>
   ), [type]);
 
-  // Get item layout para optimizar scroll (solo para FlatList)
-  const getItemLayout = useCallback((data, index) => {
-    const itemHeight = dimensions.cardWidth * (9 / 16) + 80; // thumbnail + info
+  // Get item layout
+  const getItemLayout = useCallback((data: ArrayLike<MediaFile> | null, index: number) => {
+    const itemHeight = dimensions.cardWidth * (9 / 16) + 80;
     const row = Math.floor(index / dimensions.numColumns);
     return {
       length: itemHeight,
@@ -150,9 +181,11 @@ const MediaGrid = ({
   }, [dimensions.cardWidth, dimensions.numColumns]);
 
   if (grouped) {
+    const sections = validItems as MediaSection[];
+
     return (
       <SectionList
-        sections={validItems}
+        sections={sections}
         keyExtractor={keyExtractor}
         renderItem={({ item, index, section }) => {
           if (index % dimensions.numColumns !== 0) return null;
@@ -174,12 +207,11 @@ const MediaGrid = ({
           );
         }}
         renderSectionHeader={renderSectionHeader}
-        contentContainerStyle={validItems.length === 0 ? styles.emptyList : styles.gridContent}
+        contentContainerStyle={sections.length === 0 ? styles.emptyList : styles.gridContent}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
         stickySectionHeadersEnabled={false}
-        // Optimizaciones de performance
         removeClippedSubviews={true}
         maxToRenderPerBatch={3}
         updateCellsBatchingPeriod={100}
@@ -189,26 +221,26 @@ const MediaGrid = ({
     );
   }
 
+  const flatItems = validItems as MediaFile[];
+
   return (
     <FlatList
       key={`grid-${dimensions.numColumns}`}
-      data={validItems}
+      data={flatItems}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       numColumns={dimensions.numColumns}
-      contentContainerStyle={validItems.length === 0 ? styles.emptyList : styles.gridContent}
-      columnWrapperStyle={validItems.length > 0 ? [styles.row, { gap: dimensions.gap }] : null}
+      contentContainerStyle={flatItems.length === 0 ? styles.emptyList : styles.gridContent}
+      columnWrapperStyle={flatItems.length > 0 ? [styles.row, { gap: dimensions.gap }] : undefined}
       ListEmptyComponent={renderEmpty}
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
-      // Optimizaciones críticas de performance
       removeClippedSubviews={true}
       maxToRenderPerBatch={dimensions.numColumns * 3}
       updateCellsBatchingPeriod={50}
       initialNumToRender={dimensions.numColumns * 5}
       windowSize={10}
       getItemLayout={getItemLayout}
-      // Performance boost adicional
       legacyImplementation={false}
     />
   );

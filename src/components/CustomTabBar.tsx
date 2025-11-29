@@ -5,9 +5,21 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import type { MediaType } from '../types';
 
-const CustomTabBar = ({ activeTab, onTabPress }) => {
-  const tabs = [
+interface Tab {
+  id: MediaType;
+  label: string;
+  icon: string;
+}
+
+interface CustomTabBarProps {
+  activeTab: MediaType;
+  onTabPress: (tab: MediaType) => void;
+}
+
+const CustomTabBar: React.FC<CustomTabBarProps> = ({ activeTab, onTabPress }) => {
+  const tabs: Tab[] = [
     { id: 'audio', label: 'Audio', icon: '🎵' },
     { id: 'video', label: 'Video', icon: '🎬' },
   ];

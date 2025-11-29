@@ -12,23 +12,30 @@ import TrackPlayer, {
     Event,
     State,
     usePlaybackState,
-    useProgress
+    useProgress,
+    Track,
 } from 'react-native-track-player';
 
 const { width } = Dimensions.get('window');
 
-const MiniPlayer = ({ onPress }) => {
-    const [currentTrack, setCurrentTrack] = useState(null);
-    const [isVisible, setIsVisible] = useState(false);
+interface MiniPlayerProps {
+    onPress: () => void;
+}
+
+const MiniPlayer: React.FC<MiniPlayerProps> = ({ onPress }) => {
+    const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+    const [isVisible, setIsVisible] = useState<boolean>(false);
     const playbackState = usePlaybackState();
     const progress = useProgress();
-    const slideAnim = useState(new Animated.Value(100))[0];
+    const [slideAnim] = useState(new Animated.Value(100));
 
     useTrackPlayerEvents([Event.PlaybackTrackChanged], async (event) => {
         if (event.type === Event.PlaybackTrackChanged && event.nextTrack != null) {
             const track = await TrackPlayer.getTrack(event.nextTrack);
-            setCurrentTrack(track);
-            showPlayer();
+            if (track) {
+                setCurrentTrack(track);
+                showPlayer();
+            }
         }
     });
 
@@ -36,20 +43,22 @@ const MiniPlayer = ({ onPress }) => {
         checkCurrentTrack();
     }, []);
 
-    const checkCurrentTrack = async () => {
+    const checkCurrentTrack = async (): Promise<void> => {
         try {
             const trackIndex = await TrackPlayer.getCurrentTrack();
             if (trackIndex !== null) {
                 const track = await TrackPlayer.getTrack(trackIndex);
-                setCurrentTrack(track);
-                showPlayer();
+                if (track) {
+                    setCurrentTrack(track);
+                    showPlayer();
+                }
             }
         } catch (error) {
             console.log('Error getting current track:', error);
         }
     };
 
-    const showPlayer = () => {
+    const showPlayer = (): void => {
         setIsVisible(true);
         Animated.spring(slideAnim, {
             toValue: 0,
@@ -59,7 +68,7 @@ const MiniPlayer = ({ onPress }) => {
         }).start();
     };
 
-    const hidePlayer = () => {
+    const hidePlayer = (): void => {
         Animated.timing(slideAnim, {
             toValue: 100,
             duration: 200,
@@ -67,7 +76,7 @@ const MiniPlayer = ({ onPress }) => {
         }).start(() => setIsVisible(false));
     };
 
-    const togglePlayPause = async () => {
+    const togglePlayPause = async (): Promise<void> => {
         try {
             const state = await TrackPlayer.getState();
             if (state === State.Playing) {
@@ -80,7 +89,7 @@ const MiniPlayer = ({ onPress }) => {
         }
     };
 
-    const handleNext = async () => {
+    const handleNext = async (): Promise<void> => {
         try {
             await TrackPlayer.skipToNext();
         } catch (error) {
@@ -92,7 +101,7 @@ const MiniPlayer = ({ onPress }) => {
         return null;
     }
 
-    const isPlaying = playbackState === State.Playing;
+    const isPlaying = playbackState.state === State.Playing;
     const progressPercentage = progress.duration > 0
         ? (progress.position / progress.duration) * 100
         : 0;

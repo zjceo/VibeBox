@@ -9,12 +9,30 @@ import {
 } from 'react-native';
 import SettingsModal from './SettingsModal';
 
-const CompactSidebar = ({ activeSection, onSectionChange, onRescan }) => {
-  const [showSettings, setShowSettings] = useState(false);
+type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders';
+
+interface Section {
+  id: SectionId;
+  icon: string;
+  label: string;
+}
+
+interface CompactSidebarProps {
+  activeSection: SectionId;
+  onSectionChange: (section: SectionId) => void;
+  onRescan?: () => void;
+}
+
+const CompactSidebar: React.FC<CompactSidebarProps> = ({
+  activeSection,
+  onSectionChange,
+  onRescan
+}) => {
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const { height, width } = useWindowDimensions();
   const isLandscape = width > height;
 
-  const sections = [
+  const sections: Section[] = [
     { id: 'home', icon: '🏠', label: 'Inicio' },
     { id: 'audio', icon: '🎵', label: 'Audio' },
     { id: 'video', icon: '🎬', label: 'Video' },
@@ -83,7 +101,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   containerLandscape: {
-    width: 70, // Slightly narrower in landscape
+    width: 70,
   },
   scrollContent: {
     paddingVertical: 28,

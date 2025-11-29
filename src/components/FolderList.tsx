@@ -7,26 +7,32 @@ import {
     TouchableOpacity,
     Alert,
     RefreshControl,
+    ListRenderItem,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import MediaService from '../services/MediaService';
 
-const FolderList = ({ onUpdate, refreshControl }) => {
-    const [paths, setPaths] = useState([]);
-    const [customPaths, setCustomPaths] = useState([]);
-    const [refreshing, setRefreshing] = useState(false);
+interface FolderListProps {
+    onUpdate?: () => void;
+    refreshControl?: React.ReactElement;
+}
+
+const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => {
+    const [paths, setPaths] = useState<string[]>([]);
+    const [customPaths, setCustomPaths] = useState<string[]>([]);
+    const [refreshing, setRefreshing] = useState<boolean>(false);
 
     useEffect(() => {
         loadPaths();
     }, []);
 
-    const loadPaths = async () => {
+    const loadPaths = async (): Promise<void> => {
         try {
             await MediaService.loadCustomPaths();
             const allPaths = MediaService.getMediaPaths();
             setCustomPaths(MediaService.customPaths);
-            setPaths(allPaths);
+            setPaths(allPaths)
             console.log('FolderList - Loaded paths:', allPaths);
             console.log('FolderList - Custom paths:', MediaService.customPaths);
         } catch (error) {
@@ -35,19 +41,20 @@ const FolderList = ({ onUpdate, refreshControl }) => {
         }
     };
 
-    const onRefresh = async () => {
+    const onRefresh = async (): Promise<void> => {
         setRefreshing(true);
         await loadPaths();
         setRefreshing(false);
     };
 
-    const handleAddPath = async () => {
+    const handleAddPath = async (): Promise<void> => {
         try {
             const result = await DocumentPicker.pickDirectory();
             if (!result || !result.uri) return;
 
             let path = result.uri;
 
+            // Convertir URI de Android a path real
             if (path.startsWith('content://com.android.externalstorage.documents/tree/primary%3A')) {
                 const decoded = decodeURIComponent(path.split('primary%3A')[1]);
                 path = '/storage/emulated/0/' + decoded;
@@ -68,7 +75,7 @@ const FolderList = ({ onUpdate, refreshControl }) => {
             } else {
                 Alert.alert('Error', 'La carpeta ya existe o no se pudo añadir');
             }
-        } catch (err) {
+        } catch (err: any) {
             if (DocumentPicker.isCancel(err)) {
                 console.log('User cancelled folder picker');
             } else {
@@ -78,7 +85,7 @@ const FolderList = ({ onUpdate, refreshControl }) => {
         }
     };
 
-    const handleRemovePath = async (path) => {
+    const handleRemovePath = (path: string): void => {
         Alert.alert(
             'Eliminar carpeta',
             '¿Estás seguro de que quieres eliminar esta carpeta de la lista?',
@@ -99,9 +106,8 @@ const FolderList = ({ onUpdate, refreshControl }) => {
         );
     };
 
-    const renderItem = ({ item }) => {
+    const renderItem: ListRenderItem<string> = ({ item }) => {
         const isCustom = customPaths.includes(item);
-        console.log('FolderList - Rendering item:', item);
 
         return (
             <View style={styles.itemContainer}>
@@ -127,8 +133,6 @@ const FolderList = ({ onUpdate, refreshControl }) => {
             </View>
         );
     };
-
-    console.log('FolderList - Rendering with paths.length:', paths.length);
 
     return (
         <View style={styles.container}>

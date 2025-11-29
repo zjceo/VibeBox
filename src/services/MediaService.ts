@@ -32,7 +32,7 @@ interface FileItem {
 class MediaService {
   private audioExtensions = ['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg'];
   private videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv'];
-  private customPaths: string[] = [];
+  public customPaths: string[] = [];
   private readonly STORAGE_KEY = '@vibebox_custom_paths';
   private isScanning = false;
 
@@ -40,7 +40,7 @@ class MediaService {
     this.loadCustomPaths();
   }
 
-  private async loadCustomPaths(): Promise<void> {
+  public async loadCustomPaths(): Promise<void> {
     try {
       const storedPaths = await AsyncStorage.getItem(this.STORAGE_KEY);
       if (storedPaths) {
@@ -78,7 +78,7 @@ class MediaService {
     return false;
   }
 
-  private getMediaPaths(): string[] {
+  public getMediaPaths(): string[] {
     let paths: string[] = [];
 
     if (Platform.OS === 'android') {

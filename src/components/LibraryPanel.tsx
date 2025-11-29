@@ -6,10 +6,29 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ListRenderItem,
 } from 'react-native';
+import type { MediaFile } from '../types';
 
-const LibraryPanel = ({ mediaFiles, onMediaPress, activeSection }) => {
-  const formatFileSize = (bytes) => {
+type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders';
+
+interface MediaFiles {
+  audio?: MediaFile[];
+  video?: MediaFile[];
+}
+
+interface LibraryPanelProps {
+  mediaFiles: MediaFiles;
+  onMediaPress: (file: MediaFile) => void;
+  activeSection: SectionId;
+}
+
+const LibraryPanel: React.FC<LibraryPanelProps> = ({
+  mediaFiles,
+  onMediaPress,
+  activeSection
+}) => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -17,14 +36,17 @@ const LibraryPanel = ({ mediaFiles, onMediaPress, activeSection }) => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const getItemName = (item: MediaFile): string => {
+    return item.filename || item.name || item.title || 'Sin nombre';
+  };
+
   // Determinar qué archivos mostrar según la sección activa
-  const getDisplayFiles = () => {
+  const getDisplayFiles = (): MediaFile[] => {
     if (activeSection === 'audio') {
       return mediaFiles.audio || [];
     } else if (activeSection === 'video') {
       return mediaFiles.video || [];
     } else if (activeSection === 'home') {
-      // Mostrar ambos tipos en inicio
       return [...(mediaFiles.audio || []), ...(mediaFiles.video || [])];
     }
     return [];
@@ -32,8 +54,8 @@ const LibraryPanel = ({ mediaFiles, onMediaPress, activeSection }) => {
 
   const displayFiles = getDisplayFiles();
 
-  const renderItem = ({ item }) => {
-    const isAudio = item.type === 'audio' || item.extension === '.mp3' || item.extension === '.m4a';
+  const renderItem: ListRenderItem<MediaFile> = ({ item }) => {
+    const isAudio = item.type === 'audio';
     const icon = isAudio ? '🎵' : '🎬';
 
     return (
@@ -50,10 +72,10 @@ const LibraryPanel = ({ mediaFiles, onMediaPress, activeSection }) => {
           </View>
           <View style={styles.mediaInfo}>
             <Text style={styles.mediaName} numberOfLines={2}>
-              {item.name}
+              {getItemName(item)}
             </Text>
             <Text style={styles.mediaDetails}>
-              {item.extension} • {formatFileSize(item.size)}
+              {item.extension || item.type.toUpperCase()} • {formatFileSize(item.size)}
             </Text>
           </View>
         </View>
@@ -62,7 +84,7 @@ const LibraryPanel = ({ mediaFiles, onMediaPress, activeSection }) => {
   };
 
   // Título y subtítulo dinámicos
-  const getHeaderInfo = () => {
+  const getHeaderInfo = (): { title: string; subtitle: string } => {
     switch (activeSection) {
       case 'audio':
         return { title: 'Música', subtitle: `${mediaFiles.audio?.length || 0} canciones` };

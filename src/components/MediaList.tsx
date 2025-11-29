@@ -5,12 +5,36 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Image,
-  Animated,
+  ListRenderItem,
 } from 'react-native';
+import type { MediaFile, MediaType } from '../types';
 
-const MediaList = ({ items, onItemPress, type = 'audio', refreshControl }) => {
-  const renderItem = ({ item, index }) => (
+interface MediaListProps {
+  items: MediaFile[];
+  onItemPress: (item: MediaFile) => void;
+  type?: MediaType;
+  refreshControl?: React.ReactElement;
+}
+
+const MediaList: React.FC<MediaListProps> = ({
+  items,
+  onItemPress,
+  type = 'audio',
+  refreshControl
+}) => {
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getItemName = (item: MediaFile): string => {
+    return item.filename || item.name || item.title || 'Sin nombre';
+  };
+
+  const renderItem: ListRenderItem<MediaFile> = ({ item, index }) => (
     <TouchableOpacity
       style={styles.itemContainer}
       onPress={() => onItemPress(item)}
@@ -20,13 +44,13 @@ const MediaList = ({ items, onItemPress, type = 'audio', refreshControl }) => {
           {type === 'audio' ? '🎵' : '🎬'}
         </Text>
       </View>
-      
+
       <View style={styles.infoContainer}>
         <Text style={styles.title} numberOfLines={1}>
-          {item.name}
+          {getItemName(item)}
         </Text>
         <Text style={styles.subtitle}>
-          {item.extension} • {formatFileSize(item.size)}
+          {item.extension || item.type.toUpperCase()} • {formatFileSize(item.size)}
         </Text>
       </View>
 
@@ -35,14 +59,6 @@ const MediaList = ({ items, onItemPress, type = 'audio', refreshControl }) => {
       </View>
     </TouchableOpacity>
   );
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
