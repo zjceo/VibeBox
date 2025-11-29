@@ -11,6 +11,7 @@ import {
 import Video from 'react-native-video';
 import { useVideo } from '../context/VideoContext';
 import PlayerControls from './PlayerControls';
+import NativeVideoNotification from '../services/NativeVideoNotification';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MINI_HEIGHT = 60;
@@ -45,6 +46,8 @@ const VideoOverlay = () => {
                 useNativeDriver: false,
             }).start();
             setPaused(false);
+            // Mostrar notificación
+            NativeVideoNotification.show(currentVideo.name, true);
         } else {
             Animated.timing(slideAnim, {
                 toValue: SCREEN_HEIGHT,
@@ -53,6 +56,8 @@ const VideoOverlay = () => {
             }).start(() => {
                 setPaused(true);
                 setCurrentTime(0);
+                // Ocultar notificación
+                NativeVideoNotification.hide();
             });
         }
     }, [isVisible, currentVideo]);
@@ -70,6 +75,34 @@ const VideoOverlay = () => {
             }).start();
         }
     }, [isMinimized]);
+
+    // Actualizar notificación cuando cambia el estado de reproducción
+    useEffect(() => {
+        if (isVisible && currentVideo) {
+            NativeVideoNotification.show(currentVideo.name, !paused);
+        }
+    }, [paused, isVisible, currentVideo]);
+
+    // Escuchar eventos de la notificación
+    useEffect(() => {
+        const playListener = NativeVideoNotification.onPlayPressed(() => {
+            setPaused(false);
+        });
+
+        const pauseListener = NativeVideoNotification.onPausePressed(() => {
+            setPaused(true);
+        });
+
+        const stopListener = NativeVideoNotification.onStopPressed(() => {
+            closeVideo();
+        });
+
+        return () => {
+            playListener.remove();
+            pauseListener.remove();
+            stopListener.remove();
+        };
+    }, [closeVideo]);
 
     if (!currentVideo) return null;
 

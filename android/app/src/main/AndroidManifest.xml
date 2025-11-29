@@ -48,6 +48,16 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".VideoNotificationReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_PLAY" />
+                <action android:name="ACTION_PAUSE" />
+                <action android:name="ACTION_STOP" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
