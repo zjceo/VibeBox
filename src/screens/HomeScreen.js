@@ -189,12 +189,14 @@ const HomeScreen = ({ navigation }) => {
           onSectionChange={setActiveSection}
         />
 
-        {/* Library Panel */}
-        <LibraryPanel
-          mediaFiles={mediaFiles}
-          onMediaPress={handleMediaPress}
-          activeSection={activeSection}
-        />
+        {/* Library Panel - Solo mostrar en la sección 'home' */}
+        {activeSection === 'home' && (
+          <LibraryPanel
+            mediaFiles={mediaFiles}
+            onMediaPress={handleMediaPress}
+            activeSection={activeSection}
+          />
+        )}
 
         {/* Main Content Area */}
         <View style={styles.contentArea}>
