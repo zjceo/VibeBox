@@ -9,8 +9,10 @@ import {
   Switch,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const SettingsModal = ({ visible, onClose, onRescan }) => {
+  const navigation = useNavigation();
   const [autoPlay, setAutoPlay] = useState(true);
   const [notifications, setNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
@@ -187,6 +189,21 @@ const SettingsModal = ({ visible, onClose, onRescan }) => {
               <View style={styles.actionText}>
                 <Text style={styles.actionTitle}>Limpiar caché</Text>
                 <Text style={styles.actionSubtitle}>Liberar espacio de almacenamiento</Text>
+              </View>
+              <Text style={styles.actionArrow}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => {
+                onClose();
+                navigation.navigate('DatabaseDebug');
+              }}
+              activeOpacity={0.7}>
+              <Text style={styles.actionIcon}>🔍</Text>
+              <View style={styles.actionText}>
+                <Text style={styles.actionTitle}>Database Debug</Text>
+                <Text style={styles.actionSubtitle}>Ver estadísticas y gestionar la base de datos</Text>
               </View>
               <Text style={styles.actionArrow}>›</Text>
             </TouchableOpacity>
