@@ -19,10 +19,13 @@ import AudioPlayerService from '../services/AudioPlayerService';
 import FavoritesService from '../services/FavoritesService';
 import AddToPlaylistModal from '../components/playlists/AddToPlaylistModal';
 import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents } from 'react-native-track-player';
+import { AudioPlayerScreenProps } from './types';
 
 const { width } = Dimensions.get('window');
 
-const AudioPlayerScreen = ({ route, navigation }) => {
+type RepeatModeType = 'off' | 'track' | 'playlist';
+
+const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ route, navigation }) => {
   const { track, playlist = [] } = route.params;
   
   // Estados principales
@@ -31,7 +34,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
   const [duration, setDuration] = useState(0);
   const [currentTrack, setCurrentTrack] = useState(track);
   const [loading, setLoading] = useState(true);
-  const [repeatMode, setRepeatMode] = useState('off');
+  const [repeatMode, setRepeatMode] = useState<RepeatModeType>('off');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
@@ -195,7 +198,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleSeek = async (value) => {
+  const handleSeek = async (value: number) => {
     try {
       await AudioPlayerService.seekTo(value);
       setPosition(value);
@@ -205,7 +208,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const skipTime = async (seconds) => {
+  const skipTime = async (seconds: number) => {
     const newPosition = Math.max(0, Math.min(duration, position + seconds));
     await handleSeek(newPosition);
 
@@ -224,7 +227,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     ]).start();
   };
 
-  const handleDoubleTap = (side) => {
+  const handleDoubleTap = (side: 'left' | 'right') => {
     if (doubleTapTimeoutRef.current) {
       clearTimeout(doubleTapTimeoutRef.current);
       doubleTapTimeoutRef.current = null;
@@ -286,7 +289,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const selectTrack = async (item, index) => {
+  const selectTrack = async (item: any, index: number) => {
     try {
       await TrackPlayer.skip(index);
       await AudioPlayerService.play();
@@ -299,7 +302,7 @@ const AudioPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
