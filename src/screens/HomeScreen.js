@@ -8,20 +8,18 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
-  useWindowDimensions,
 } from 'react-native';
-import CompactSidebar from '../components/CompactSidebar';
-import LibraryPanel from '../components/LibraryPanel';
-import MediaGrid from '../components/MediaGrid';
-import LoadingScreen from '../components/LoadingScreen';
-import MiniPlayer from '../components/MiniPlayer';
-import MediaService from '../services/MediaService';
-import PermissionsService from '../services/PermissionsService';
-import FavoritesService from '../services/FavoritesService';
-import FolderList from '../components/FolderList';
-import PlaylistList from '../components/PlaylistList';
-import PlaylistDetail from '../components/PlaylistDetail';
-import { useVideo } from '../context/VideoContext';
+import CompactSidebar from '../components/ui/CompactSidebar';
+import LibraryPanel from '../components/ui/LibraryPanel';
+import MediaGrid from '../components/media/MediaGrid';
+import LoadingScreen from '../components/ui/LoadingScreen';
+import MiniPlayer from '../components/audio/MiniPlayer';
+import MediaService from './../services/MediaService';
+import PermissionsService from './../services/PermissionsService';
+import FavoritesService from './../services/FavoritesService';
+import FolderList from '../components/media/FolderList';
+import PlaylistList from '../components/playlists/PlaylistList';
+import PlaylistDetail from '../components/playlists/PlaylistDetail';
 
 const HomeScreen = ({ navigation }) => {
   const [activeSection, setActiveSection] = useState('home');
@@ -35,7 +33,6 @@ const HomeScreen = ({ navigation }) => {
   const [hasPermission, setHasPermission] = useState(false);
   const [showLibraryPanel, setShowLibraryPanel] = useState(true);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
-  const { playVideo } = useVideo();
 
   useEffect(() => {
     checkPermissionsAndLoadMedia();
@@ -134,6 +131,7 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // ✅ FUNCIÓN ACTUALIZADA - Sin VideoContext
   const handleMediaPress = (item) => {
     const isAudio = item.type === 'audio' ||
       item.extension === '.mp3' ||
@@ -146,7 +144,11 @@ const HomeScreen = ({ navigation }) => {
         playlist: mediaFiles.audio,
       });
     } else {
-      playVideo(item, mediaFiles.video);
+      // Navegar directamente a VideoPlayerScreen
+      navigation.navigate('VideoPlayer', {
+        video: item,
+        playlist: mediaFiles.video,
+      });
     }
   };
 
@@ -239,94 +241,96 @@ const HomeScreen = ({ navigation }) => {
           onRescan={handleRescan}
         />
 
-        {activeSection === 'home' && showLibraryPanel && (
-          <LibraryPanel
-            mediaFiles={mediaFiles}
-            onMediaPress={handleMediaPress}
-            activeSection={activeSection}
-          />
-        )}
-
         <View style={styles.contentArea}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
-              <Text style={styles.headerSubtitle}>
-                {activeSection === 'playlists' && !selectedPlaylist
-                  ? 'Tus colecciones'
-                  : `${currentMedia.length} archivos`}
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              {currentMedia.length > 0 && activeSection !== 'folders' && activeSection !== 'playlists' && (
-                <TouchableOpacity
-                  style={styles.headerButtonPrimary}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    if (currentMedia.length > 0) {
-                      handleMediaPress(currentMedia[0]);
-                    }
-                  }}>
-                  <Text style={styles.headerButtonPrimaryText}>
-                    Reproducir todo
+          {activeSection === 'home' && showLibraryPanel ? (
+            <LibraryPanel
+              mediaFiles={mediaFiles}
+              onMediaPress={handleMediaPress}
+              activeSection={activeSection}
+            />
+          ) : (
+            <>
+              <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                  <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
+                  <Text style={styles.headerSubtitle}>
+                    {activeSection === 'playlists' && !selectedPlaylist
+                      ? 'Tus colecciones'
+                      : `${currentMedia.length} archivos`}
                   </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+                </View>
+                <View style={styles.headerRight}>
+                  {currentMedia.length > 0 && activeSection !== 'folders' && activeSection !== 'playlists' && (
+                    <TouchableOpacity
+                      style={styles.headerButtonPrimary}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (currentMedia.length > 0) {
+                          handleMediaPress(currentMedia[0]);
+                        }
+                      }}>
+                      <Text style={styles.headerButtonPrimaryText}>
+                        Reproducir todo
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
 
-          <View style={styles.contentContainer}>
-            {activeSection === 'folders' ? (
-              <FolderList
-                mediaFiles={mediaFiles}
-                onMediaPress={handleMediaPress}
-                onUpdate={loadMediaFiles}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    tintColor="#1DB954"
-                    colors={['#1DB954']}
+              <View style={styles.contentContainer}>
+                {activeSection === 'folders' ? (
+                  <FolderList
+                    mediaFiles={mediaFiles}
+                    onMediaPress={handleMediaPress}
+                    onUpdate={loadMediaFiles}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#1DB954"
+                        colors={['#1DB954']}
+                      />
+                    }
                   />
-                }
-              />
-            ) : activeSection === 'playlists' ? (
-              selectedPlaylist ? (
-                <PlaylistDetail
-                  playlist={selectedPlaylist}
-                  onBack={() => setSelectedPlaylist(null)}
-                  onItemPress={handleMediaPress}
-                />
-              ) : (
-                <PlaylistList
-                  onPlaylistPress={setSelectedPlaylist}
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={refreshing}
-                      onRefresh={onRefresh}
-                      tintColor="#1DB954"
-                      colors={['#1DB954']}
+                ) : activeSection === 'playlists' ? (
+                  selectedPlaylist ? (
+                    <PlaylistDetail
+                      playlist={selectedPlaylist}
+                      onBack={() => setSelectedPlaylist(null)}
+                      onItemPress={handleMediaPress}
                     />
-                  }
-                />
-              )
-            ) : (
-              <MediaGrid
-                items={mediaData}
-                onItemPress={handleMediaPress}
-                type={activeSection === 'audio' ? 'audio' : 'video'}
-                grouped={shouldGroup}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    tintColor="#1DB954"
-                    colors={['#1DB954']}
+                  ) : (
+                    <PlaylistList
+                      onPlaylistPress={setSelectedPlaylist}
+                      refreshControl={
+                        <RefreshControl
+                          refreshing={refreshing}
+                          onRefresh={onRefresh}
+                          tintColor="#1DB954"
+                          colors={['#1DB954']}
+                        />
+                      }
+                    />
+                  )
+                ) : (
+                  <MediaGrid
+                    items={mediaData}
+                    onItemPress={handleMediaPress}
+                    type={activeSection === 'audio' ? 'audio' : 'video'}
+                    grouped={shouldGroup}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#1DB954"
+                        colors={['#1DB954']}
+                      />
+                    }
                   />
-                }
-              />
-            )}
-          </View>
+                )}
+              </View>
+            </>
+          )}
         </View>
       </View>
       <MiniPlayer navigation={navigation} />

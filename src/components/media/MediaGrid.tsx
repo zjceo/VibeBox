@@ -11,7 +11,7 @@ import {
   SectionListRenderItem,
   ListRenderItem,
 } from 'react-native';
-import type { MediaFile } from '../types';
+import type { MediaFile } from '../../types';
 
 interface MediaCardProps {
   item: MediaFile;

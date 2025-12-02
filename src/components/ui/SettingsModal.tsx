@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type { RootStackNavigationProp } from '../types';
+import type { RootStackNavigationProp } from '../../types';
 
 /**
  * Props del componente SettingsModal

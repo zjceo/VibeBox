@@ -8,7 +8,7 @@ import {
     StyleSheet,
     Alert,
 } from 'react-native';
-import PlaylistService from '../services/PlaylistService';
+import PlaylistService from '../../services/PlaylistService';
 import CreatePlaylistModal from './CreatePlaylistModal';
 
 const AddToPlaylistModal = ({ visible, onClose, track }) => {

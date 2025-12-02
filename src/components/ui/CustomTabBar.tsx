@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import type { MediaType } from '../types';
+import type { MediaType } from '../../types';
 
 interface Tab {
   id: MediaType;

@@ -7,7 +7,7 @@ import {
   StyleSheet,
   ListRenderItem,
 } from 'react-native';
-import type { MediaFile, MediaType } from '../types';
+import type { MediaFile, MediaType } from '../../types';
 
 interface MediaListProps {
   items: MediaFile[];

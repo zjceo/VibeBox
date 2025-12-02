@@ -9,7 +9,7 @@ import {
     Dimensions,
     Alert,
 } from 'react-native';
-import PlaylistService from '../services/PlaylistService';
+import PlaylistService from '../../services/PlaylistService';
 import CreatePlaylistModal from './CreatePlaylistModal';
 
 const { width } = Dimensions.get('window');

@@ -9,9 +9,9 @@ import {
     Animated,
 } from 'react-native';
 import Video, { OnLoadData, OnProgressData, VideoRef } from 'react-native-video';
-import { useVideo } from '../context/VideoContext';
-import PlayerControls from './PlayerControls';
-import NativeVideoNotification from '../services/NativeVideoNotification';
+import { useVideo } from '../../context/VideoContext';
+import PlayerControls from '../audio/PlayerControls';
+import NativeVideoNotification from '../../services/NativeVideoNotification';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MINI_HEIGHT = 60;

@@ -8,7 +8,7 @@ import {
     Alert,
     Image,
 } from 'react-native';
-import PlaylistService from '../services/PlaylistService';
+import PlaylistService from '../../services/PlaylistService';
 
 const PlaylistDetail = ({ playlist, onBack, onItemPress }) => {
     const [items, setItems] = useState([]);

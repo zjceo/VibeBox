@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ListRenderItem,
 } from 'react-native';
-import type { MediaFile } from '../types';
+import type { MediaFile } from '../../types';
 
 type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders';
 

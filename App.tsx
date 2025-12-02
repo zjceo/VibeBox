@@ -5,8 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TrackPlayer from 'react-native-track-player';
 
-import { VideoProvider } from './src/context/VideoContext';
-import VideoOverlay from './src/components/VideoOverlay';
 import { HomeScreen, AudioPlayerScreen, VideoPlayerScreen } from './src/screens';
 import DatabaseDebugScreen from './src/screens/DatabaseDebugScreen';
 
@@ -32,36 +30,42 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <VideoProvider>
-        <NavigationContainer theme={DarkTheme}>
-          <StatusBar barStyle="light-content" />
+      <NavigationContainer theme={DarkTheme}>
+        <StatusBar barStyle="light-content" />
 
-          <Stack.Navigator
-            initialRouteName="Home"
-            screenOptions={{ headerShown: false }}
-          >
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-            />
-            <Stack.Screen
-              name="AudioPlayer"
-              component={AudioPlayerScreen}
-            />
-            <Stack.Screen
-              name="DatabaseDebug"
-              component={DatabaseDebugScreen}
-            />
-            <Stack.Screen
-              name="VideoPlayer"
-              component={VideoPlayerScreen}
-            />
-          </Stack.Navigator>
+        <Stack.Navigator
+          initialRouteName="Home"
+          screenOptions={{ 
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen
+            name="Home"
+            component={HomeScreen}
+          />
+          <Stack.Screen
+            name="AudioPlayer"
+            component={AudioPlayerScreen}
+            options={{
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen
+            name="VideoPlayer"
+            component={VideoPlayerScreen}
+            options={{
+              animation: 'fade',
+              presentation: 'fullScreenModal',
+            }}
+          />
+          <Stack.Screen
+            name="DatabaseDebug"
+            component={DatabaseDebugScreen}
+          />
+        </Stack.Navigator>
 
-          <VideoOverlay />
-
-        </NavigationContainer>
-      </VideoProvider>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }
