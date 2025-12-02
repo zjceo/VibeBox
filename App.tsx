@@ -7,7 +7,7 @@ import TrackPlayer from 'react-native-track-player';
 
 import { VideoProvider } from './src/context/VideoContext';
 import VideoOverlay from './src/components/VideoOverlay';
-import { HomeScreen, AudioPlayerScreen } from './src/screens';
+import { HomeScreen, AudioPlayerScreen, VideoPlayerScreen } from './src/screens';
 import DatabaseDebugScreen from './src/screens/DatabaseDebugScreen';
 
 const Stack = createNativeStackNavigator();
@@ -51,6 +51,10 @@ export default function App() {
             <Stack.Screen
               name="DatabaseDebug"
               component={DatabaseDebugScreen}
+            />
+            <Stack.Screen
+              name="VideoPlayer"
+              component={VideoPlayerScreen}
             />
           </Stack.Navigator>
 

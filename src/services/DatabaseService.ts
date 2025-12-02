@@ -39,8 +39,15 @@ class DatabaseService {
                     database_size
                 );
 
+                // ✅ PRIMERO: Crear estructura básica
+                await this.createBasicStructure();
+                
+                // ✅ SEGUNDO: Migrar si es necesario
                 await this.checkAndMigrate();
-                await this.createTables();
+                
+                // ✅ TERCERO: Crear índices y tablas auxiliares
+                await this.createIndexesAndExtraTables();
+                
                 console.log("✅ Database initialized successfully");
                 resolve();
             } catch (error) {
@@ -52,29 +59,49 @@ class DatabaseService {
         return this.initPromise;
     }
 
+    private async createBasicStructure(): Promise<void> {
+        if (!this.db) return;
+
+        try {
+            // Tabla de versión
+            await this.db.executeSql(`
+                CREATE TABLE IF NOT EXISTS db_version (
+                    version INTEGER PRIMARY KEY
+                );
+            `);
+
+            // Tabla principal (estructura mínima v1)
+            await this.db.executeSql(`
+                CREATE TABLE IF NOT EXISTS media_files (
+                    id TEXT PRIMARY KEY,
+                    path TEXT NOT NULL UNIQUE,
+                    name TEXT,
+                    size INTEGER,
+                    duration TEXT,
+                    type TEXT NOT NULL,
+                    extension TEXT,
+                    created_at INTEGER DEFAULT 0
+                );
+            `);
+
+            console.log("✅ Basic structure created");
+        } catch (error) {
+            console.error("❌ Error creating basic structure:", error);
+            throw error;
+        }
+    }
+
     private async checkAndMigrate(): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
         try {
-            const [versionCheck] = await this.db.executeSql(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='db_version';
-      `);
-
+            const [versionResult] = await this.db.executeSql(`SELECT version FROM db_version;`);
+            
             let currentDbVersion = 1;
-
-            if (versionCheck.rows.length === 0) {
-                await this.db.executeSql(`
-          CREATE TABLE IF NOT EXISTS db_version (
-            version INTEGER PRIMARY KEY
-          );
-        `);
+            if (versionResult.rows.length === 0) {
                 await this.db.executeSql(`INSERT INTO db_version (version) VALUES (1);`);
             } else {
-                const [versionResult] = await this.db.executeSql(`SELECT version FROM db_version;`);
-                if (versionResult.rows.length > 0) {
-                    currentDbVersion = versionResult.rows.item(0).version;
-                }
+                currentDbVersion = versionResult.rows.item(0).version;
             }
 
             console.log(`📊 Current DB version: ${currentDbVersion}, Target: ${this.currentVersion}`);
@@ -83,8 +110,9 @@ class DatabaseService {
                 await this.migrate(currentDbVersion, this.currentVersion);
             }
         } catch (error) {
-            console.error("❌ Error checking/migrating database:", error);
-            await this.recreateDatabase();
+            console.error("❌ Error in migration check:", error);
+            // Si falla es primera vez, ya tenemos estructura básica
+            console.log("ℹ️ First time setup, skipping migration");
         }
     }
 
@@ -134,15 +162,15 @@ class DatabaseService {
 
             if (!hasUpdatedAt) {
                 await this.db.executeSql(`
-          ALTER TABLE media_files 
-          ADD COLUMN updated_at INTEGER DEFAULT 0;
-        `);
+                    ALTER TABLE media_files 
+                    ADD COLUMN updated_at INTEGER DEFAULT 0;
+                `);
 
                 await this.db.executeSql(`
-          UPDATE media_files 
-          SET updated_at = created_at 
-          WHERE updated_at = 0;
-        `);
+                    UPDATE media_files 
+                    SET updated_at = created_at 
+                    WHERE updated_at = 0;
+                `);
 
                 console.log("✅ Column updated_at added successfully");
             } else {
@@ -173,15 +201,15 @@ class DatabaseService {
 
             if (!hasTitle) {
                 await this.db.executeSql(`
-          ALTER TABLE media_files 
-          ADD COLUMN title TEXT;
-        `);
+                    ALTER TABLE media_files 
+                    ADD COLUMN title TEXT;
+                `);
 
                 await this.db.executeSql(`
-          UPDATE media_files 
-          SET title = name 
-          WHERE title IS NULL;
-        `);
+                    UPDATE media_files 
+                    SET title = name 
+                    WHERE title IS NULL;
+                `);
 
                 console.log("✅ Column title added successfully");
             } else {
@@ -200,12 +228,12 @@ class DatabaseService {
 
         try {
             await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS favorites (
-          media_id TEXT PRIMARY KEY,
-          created_at INTEGER DEFAULT 0,
-          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
-        );
-      `);
+                CREATE TABLE IF NOT EXISTS favorites (
+                    media_id TEXT PRIMARY KEY,
+                    created_at INTEGER DEFAULT 0,
+                    FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
+                );
+            `);
             console.log("✅ Favorites table created successfully");
         } catch (error) {
             console.error("❌ Error in v3->v4 migration:", error);
@@ -220,26 +248,26 @@ class DatabaseService {
 
         try {
             await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS playlists (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          cover_image TEXT,
-          created_at INTEGER DEFAULT 0,
-          updated_at INTEGER DEFAULT 0
-        );
-      `);
+                CREATE TABLE IF NOT EXISTS playlists (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    cover_image TEXT,
+                    created_at INTEGER DEFAULT 0,
+                    updated_at INTEGER DEFAULT 0
+                );
+            `);
 
             await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS playlist_items (
-          id TEXT PRIMARY KEY,
-          playlist_id TEXT NOT NULL,
-          media_id TEXT NOT NULL,
-          position INTEGER DEFAULT 0,
-          added_at INTEGER DEFAULT 0,
-          FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE,
-          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
-        );
-      `);
+                CREATE TABLE IF NOT EXISTS playlist_items (
+                    id TEXT PRIMARY KEY,
+                    playlist_id TEXT NOT NULL,
+                    media_id TEXT NOT NULL,
+                    position INTEGER DEFAULT 0,
+                    added_at INTEGER DEFAULT 0,
+                    FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE,
+                    FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
+                );
+            `);
             console.log("✅ Playlists tables created successfully");
         } catch (error) {
             console.error("❌ Error in v4->v5 migration:", error);
@@ -247,121 +275,46 @@ class DatabaseService {
         }
     }
 
-    private async recreateDatabase(): Promise<void> {
-        if (!this.db) throw new Error('Database not initialized');
-
-        console.log("🔨 Recreating database from scratch...");
-
-        try {
-            await this.db.executeSql(`DROP TABLE IF EXISTS media_files;`);
-            await this.db.executeSql(`DROP TABLE IF EXISTS folders;`);
-            await this.db.executeSql(`DROP TABLE IF EXISTS cache_metadata;`);
-            await this.db.executeSql(`DROP TABLE IF EXISTS favorites;`);
-            await this.db.executeSql(`DROP TABLE IF EXISTS playlists;`);
-            await this.db.executeSql(`DROP TABLE IF EXISTS playlist_items;`);
-            await this.db.executeSql(`DROP TABLE IF EXISTS db_version;`);
-
-            await this.db.executeSql(`
-        CREATE TABLE db_version (
-          version INTEGER PRIMARY KEY
-        );
-      `);
-            await this.db.executeSql(`INSERT INTO db_version (version) VALUES (?);`, [this.currentVersion]);
-
-            console.log("✅ Database recreated successfully");
-        } catch (error) {
-            console.error("❌ Error recreating database:", error);
-            throw error;
-        }
-    }
-
-    private async createTables(): Promise<void> {
+    private async createIndexesAndExtraTables(): Promise<void> {
         if (!this.db) return;
 
         try {
+            // Índices
             await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS media_files (
-          id TEXT PRIMARY KEY,
-          path TEXT NOT NULL UNIQUE,
-          name TEXT,
-          title TEXT,
-          size INTEGER,
-          duration TEXT,
-          type TEXT NOT NULL,
-          extension TEXT,
-          created_at INTEGER DEFAULT 0,
-          updated_at INTEGER DEFAULT 0
-        );
-      `);
-
+                CREATE INDEX IF NOT EXISTS idx_media_type ON media_files (type);
+            `);
             await this.db.executeSql(`
-        CREATE INDEX IF NOT EXISTS idx_media_type 
-        ON media_files (type);
-      `);
-
-            await this.db.executeSql(`
-        CREATE INDEX IF NOT EXISTS idx_media_name 
-        ON media_files (name);
-      `);
+                CREATE INDEX IF NOT EXISTS idx_media_name ON media_files (name);
+            `);
 
             try {
                 await this.db.executeSql(`
-          CREATE INDEX IF NOT EXISTS idx_media_updated 
-          ON media_files (updated_at);
-        `);
+                    CREATE INDEX IF NOT EXISTS idx_media_updated ON media_files (updated_at);
+                `);
             } catch (e) {
                 console.log("ℹ️ Skipping updated_at index (column may not exist yet)");
             }
 
+            // Tablas auxiliares
             await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS folders (
-          path TEXT PRIMARY KEY,
-          is_custom INTEGER DEFAULT 0,
-          created_at INTEGER DEFAULT 0
-        );
-      `);
+                CREATE TABLE IF NOT EXISTS folders (
+                    path TEXT PRIMARY KEY,
+                    is_custom INTEGER DEFAULT 0,
+                    created_at INTEGER DEFAULT 0
+                );
+            `);
 
             await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS cache_metadata (
-          key TEXT PRIMARY KEY,
-          value TEXT,
-          updated_at INTEGER DEFAULT 0
-        );
-      `);
+                CREATE TABLE IF NOT EXISTS cache_metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at INTEGER DEFAULT 0
+                );
+            `);
 
-            await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS favorites (
-          media_id TEXT PRIMARY KEY,
-          created_at INTEGER DEFAULT 0,
-          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
-        );
-      `);
-
-            await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS playlists (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          cover_image TEXT,
-          created_at INTEGER DEFAULT 0,
-          updated_at INTEGER DEFAULT 0
-        );
-      `);
-
-            await this.db.executeSql(`
-        CREATE TABLE IF NOT EXISTS playlist_items (
-          id TEXT PRIMARY KEY,
-          playlist_id TEXT NOT NULL,
-          media_id TEXT NOT NULL,
-          position INTEGER DEFAULT 0,
-          added_at INTEGER DEFAULT 0,
-          FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE,
-          FOREIGN KEY (media_id) REFERENCES media_files (id) ON DELETE CASCADE
-        );
-      `);
-
-            console.log("✅ Tables created successfully");
+            console.log("✅ Indexes and extra tables created");
         } catch (error) {
-            console.error("❌ Error creating tables:", error);
+            console.error("❌ Error creating indexes/tables:", error);
             throw error;
         }
     }
@@ -456,8 +409,8 @@ class DatabaseService {
                     const promises = batch.map(file =>
                         tx.executeSql(
                             `INSERT OR REPLACE INTO media_files 
-              (id, path, name, title, size, duration, type, extension, created_at, updated_at) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            (id, path, name, title, size, duration, type, extension, created_at, updated_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
                                 file.id,
                                 file.path,
@@ -560,9 +513,9 @@ class DatabaseService {
         try {
             const [results] = await this.db.executeSql(
                 `SELECT * FROM media_files 
-        WHERE name LIKE ? OR title LIKE ?
-        ORDER BY name ASC 
-        LIMIT 50`,
+                WHERE name LIKE ? OR title LIKE ?
+                ORDER BY name ASC 
+                LIMIT 50`,
                 [`%${query}%`, `%${query}%`]
             );
 
@@ -612,8 +565,7 @@ class DatabaseService {
         }
     }
 
-    // ==================== FAVORITES METHODS ====================
-
+    // ==================== FAVORITES ====================
     async addToFavorites(mediaId: string): Promise<void> {
         await this.init();
         if (!this.db) return;
@@ -669,8 +621,8 @@ class DatabaseService {
         try {
             const [results] = await this.db.executeSql(
                 `SELECT m.* FROM media_files m
-         INNER JOIN favorites f ON m.id = f.media_id
-         ORDER BY f.created_at DESC`
+                 INNER JOIN favorites f ON m.id = f.media_id
+                 ORDER BY f.created_at DESC`
             );
 
             const files: MediaFile[] = [];
@@ -697,8 +649,7 @@ class DatabaseService {
         }
     }
 
-    // ==================== PLAYLIST METHODS ====================
-
+    // ==================== PLAYLISTS ====================
     async createPlaylist(name: string): Promise<string> {
         await this.init();
         if (!this.db) throw new Error("Database not initialized");
@@ -800,7 +751,6 @@ class DatabaseService {
         const now = Date.now();
 
         try {
-            // Get current max position
             const [posResult] = await this.db.executeSql(
                 `SELECT MAX(position) as maxPos FROM playlist_items WHERE playlist_id = ?`,
                 [playlistId]
@@ -812,7 +762,6 @@ class DatabaseService {
                 [id, playlistId, mediaId, position, now]
             );
 
-            // Update playlist updated_at
             await this.db.executeSql(
                 `UPDATE playlists SET updated_at = ? WHERE id = ?`,
                 [now, playlistId]

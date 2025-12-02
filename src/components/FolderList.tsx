@@ -137,7 +137,7 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
-                <Text style={styles.title}>Carpetas de Medios</Text>
+                {/*<Text style={styles.title}>Carpetas de Medios</Text>*/}
                 <TouchableOpacity
                     style={styles.addButton}
                     onPress={handleAddPath}
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     headerContainer: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
+        alignItems: 'flex-start',
+        marginBottom: 30,
     },
     title: {
         fontSize: 20,
