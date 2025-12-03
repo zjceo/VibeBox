@@ -259,6 +259,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <TouchableOpacity
               style={styles.actionItem}
+              onPress={() => {
+                onClose();
+                navigation.navigate('About');
+              }}
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>ℹ️</Text>
               <View style={styles.actionText}>
@@ -270,6 +274,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <TouchableOpacity
               style={styles.actionItem}
+              onPress={() => {
+                onClose();
+                navigation.navigate('Terms');
+              }}
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>📄</Text>
               <View style={styles.actionText}>

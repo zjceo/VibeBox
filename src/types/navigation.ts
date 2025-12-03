@@ -20,6 +20,8 @@ export type RootStackParamList = {
     };
     VideoList: undefined;
     DatabaseDebug: undefined;
+    About: undefined;
+    Terms: undefined;
 };
 
 /**
