@@ -14,6 +14,12 @@ import RNFS from 'react-native-fs';
 import MediaService from '../../services/MediaService';
 
 interface FolderListProps {
+    mediaFiles?: {
+        audio: any[];
+        video: any[];
+        favorites: any[];
+    };
+    onMediaPress?: (item: any) => void;
     onUpdate?: () => void;
     refreshControl?: React.ReactElement;
 }

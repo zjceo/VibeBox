@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   
 } from 'react-native';
-import CompactSidebar from '../../components/ui/CompactSidebar';
+import CompactSidebar, { SectionId } from '../../components/ui/CompactSidebar';
 import LibraryPanel from '../../components/ui/LibraryPanel';
 import MediaGrid from '../../components/media/MediaGrid';
 import LoadingScreen from '../../components/ui/LoadingScreen';
@@ -23,7 +23,7 @@ import PlaylistList from '../../components/playlists/PlaylistList';
 import PlaylistDetail from '../../components/playlists/PlaylistDetail';
 
 const HomeScreen = ({ navigation }) => {
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState<SectionId>('home');
   const [mediaFiles, setMediaFiles] = useState({
     audio: [],
     video: [],

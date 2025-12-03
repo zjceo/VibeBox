@@ -19,10 +19,10 @@ import TrackPlayer, {
 const { width } = Dimensions.get('window');
 
 interface MiniPlayerProps {
-    onPress: () => void;
+    navigation: any;
 }
 
-const MiniPlayer: React.FC<MiniPlayerProps> = ({ onPress }) => {
+const MiniPlayer: React.FC<MiniPlayerProps> = ({ navigation }) => {
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(false);
     const playbackState = usePlaybackState();
@@ -124,7 +124,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ onPress }) => {
 
             <TouchableOpacity
                 style={styles.content}
-                onPress={onPress}
+                onPress={() => navigation.navigate('AudioPlayer')}
                 activeOpacity={0.9}>
 
                 {/* Album Art / Icon */}
