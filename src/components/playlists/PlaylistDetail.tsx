@@ -6,18 +6,36 @@ import {
     FlatList,
     TouchableOpacity,
     Alert,
-    Image,
 } from 'react-native';
 import PlaylistService from '../../services/PlaylistService';
 
-const PlaylistDetail = ({ playlist, onBack, onItemPress }) => {
-    const [items, setItems] = useState([]);
+interface Playlist {
+    id: string;
+    name: string;
+}
+
+interface MediaItem {
+    id: string;
+    title?: string;
+    name?: string;
+    artist?: string;
+    duration?: number;
+}
+
+interface PlaylistDetailProps {
+    playlist: Playlist;
+    onBack: () => void;
+    onItemPress: (item: MediaItem) => void;
+}
+
+const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlist, onBack, onItemPress }) => {
+    const [items, setItems] = useState<MediaItem[]>([]);
 
     useEffect(() => {
         loadItems();
     }, [playlist]);
 
-    const loadItems = async () => {
+    const loadItems = async (): Promise<void> => {
         try {
             const data = await PlaylistService.getItems(playlist.id);
             setItems(data);
@@ -26,7 +44,7 @@ const PlaylistDetail = ({ playlist, onBack, onItemPress }) => {
         }
     };
 
-    const handleRemoveItem = (mediaId) => {
+    const handleRemoveItem = (mediaId: string): void => {
         Alert.alert(
             'Quitar canción',
             '¿Quieres quitar esta canción de la lista?',
@@ -48,7 +66,7 @@ const PlaylistDetail = ({ playlist, onBack, onItemPress }) => {
         );
     };
 
-    const renderItem = ({ item, index }) => (
+    const renderItem = ({ item, index }: { item: MediaItem; index: number }) => (
         <TouchableOpacity
             style={styles.itemContainer}
             onPress={() => onItemPress(item)}
@@ -71,7 +89,7 @@ const PlaylistDetail = ({ playlist, onBack, onItemPress }) => {
         </TouchableOpacity>
     );
 
-    const formatDuration = (seconds) => {
+    const formatDuration = (seconds: number): string => {
         if (!seconds) return '0:00';
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);

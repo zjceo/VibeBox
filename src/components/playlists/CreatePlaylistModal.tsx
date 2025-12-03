@@ -10,10 +10,16 @@ import {
     Platform,
 } from 'react-native';
 
-const CreatePlaylistModal = ({ visible, onClose, onCreate }) => {
+interface CreatePlaylistModalProps {
+    visible: boolean;
+    onClose: () => void;
+    onCreate: (name: string) => void | Promise<void>;
+}
+
+const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({ visible, onClose, onCreate }) => {
     const [name, setName] = useState('');
 
-    const handleCreate = () => {
+    const handleCreate = (): void => {
         if (name.trim()) {
             onCreate(name.trim());
             setName('');

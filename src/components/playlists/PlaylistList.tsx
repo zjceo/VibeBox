@@ -16,15 +16,31 @@ const { width } = Dimensions.get('window');
 const COLUMN_COUNT = width > 600 ? 4 : 2;
 const ITEM_WIDTH = (width - 80 - (COLUMN_COUNT + 1) * 16) / COLUMN_COUNT;
 
-const PlaylistList = ({ onPlaylistPress, refreshControl }) => {
-    const [playlists, setPlaylists] = useState([]);
+interface Playlist {
+    id: string;
+    name: string;
+    cover_image?: string;
+    item_count: number;
+}
+
+interface PlaylistWithButton extends Playlist {
+    isAddButton?: boolean;
+}
+
+interface PlaylistListProps {
+    onPlaylistPress: (playlist: Playlist) => void;
+    refreshControl?: React.ReactElement;
+}
+
+const PlaylistList: React.FC<PlaylistListProps> = ({ onPlaylistPress, refreshControl }) => {
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [isModalVisible, setModalVisible] = useState(false);
 
     useEffect(() => {
         loadPlaylists();
     }, []);
 
-    const loadPlaylists = async () => {
+    const loadPlaylists = async (): Promise<void> => {
         try {
             const data = await PlaylistService.getAll();
             setPlaylists(data);
@@ -33,7 +49,7 @@ const PlaylistList = ({ onPlaylistPress, refreshControl }) => {
         }
     };
 
-    const handleCreatePlaylist = async (name) => {
+    const handleCreatePlaylist = async (name: string): Promise<void> => {
         try {
             await PlaylistService.create(name);
             loadPlaylists();
@@ -43,7 +59,7 @@ const PlaylistList = ({ onPlaylistPress, refreshControl }) => {
         }
     };
 
-    const handleDeletePlaylist = (id, name) => {
+    const handleDeletePlaylist = (id: string, name: string): void => {
         Alert.alert(
             'Eliminar lista',
             `¿Estás seguro de que quieres eliminar "${name}"?`,
@@ -65,7 +81,7 @@ const PlaylistList = ({ onPlaylistPress, refreshControl }) => {
         );
     };
 
-    const renderItem = ({ item }) => {
+    const renderItem = ({ item }: { item: PlaylistWithButton }) => {
         if (item.isAddButton) {
             return (
                 <TouchableOpacity
@@ -109,7 +125,7 @@ const PlaylistList = ({ onPlaylistPress, refreshControl }) => {
         );
     };
 
-    const data = [{ id: 'add', isAddButton: true }, ...playlists];
+    const data: PlaylistWithButton[] = [{ id: 'add', isAddButton: true, name: '', item_count: 0 }, ...playlists];
 
     return (
         <View style={styles.container}>

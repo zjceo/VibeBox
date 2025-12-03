@@ -188,7 +188,7 @@ const HomeScreen = ({ navigation }) => {
   const getSectionTitle = () => {
     switch (activeSection) {
       case 'audio':
-        return 'Música';
+        return 'Music';
       case 'video':
         return 'Videos';
       case 'folders':
@@ -252,7 +252,9 @@ const HomeScreen = ({ navigation }) => {
             <>
               <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                  <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
+                  <Text style={styles.headerTitle}>
+                    {getSectionTitle()}
+                  </Text>
                   <Text style={styles.headerSubtitle}>
                     {activeSection === 'playlists' && !selectedPlaylist
                       ? 'Tus colecciones'
@@ -357,7 +359,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 36,
     paddingVertical: 28,
     paddingTop: 32,
@@ -366,13 +368,15 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+    minWidth: 0,
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: '#ffffff',
     marginBottom: 6,
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -382,6 +386,7 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     gap: 12,
+    flexShrink: 0,
   },
   headerButton: {
     paddingHorizontal: 20,

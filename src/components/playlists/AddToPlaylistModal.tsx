@@ -11,8 +11,26 @@ import {
 import PlaylistService from '../../services/PlaylistService';
 import CreatePlaylistModal from './CreatePlaylistModal';
 
-const AddToPlaylistModal = ({ visible, onClose, track }) => {
-    const [playlists, setPlaylists] = useState([]);
+interface Track {
+    id: string;
+    title?: string;
+    name?: string;
+}
+
+interface Playlist {
+    id: string;
+    name: string;
+    item_count: number;
+}
+
+interface AddToPlaylistModalProps {
+    visible: boolean;
+    onClose: () => void;
+    track: Track;
+}
+
+const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ visible, onClose, track }) => {
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
@@ -21,7 +39,7 @@ const AddToPlaylistModal = ({ visible, onClose, track }) => {
         }
     }, [visible]);
 
-    const loadPlaylists = async () => {
+    const loadPlaylists = async (): Promise<void> => {
         try {
             const data = await PlaylistService.getAll();
             setPlaylists(data);
@@ -30,7 +48,7 @@ const AddToPlaylistModal = ({ visible, onClose, track }) => {
         }
     };
 
-    const handleAddToPlaylist = async (playlist) => {
+    const handleAddToPlaylist = async (playlist: Playlist): Promise<void> => {
         try {
             await PlaylistService.addMedia(playlist.id, track.id);
             Alert.alert('Añadido', `Se añadió a "${playlist.name}"`);
@@ -40,7 +58,7 @@ const AddToPlaylistModal = ({ visible, onClose, track }) => {
         }
     };
 
-    const handleCreatePlaylist = async (name) => {
+    const handleCreatePlaylist = async (name: string): Promise<void> => {
         try {
             const id = await PlaylistService.create(name);
             await PlaylistService.addMedia(id, track.id);
@@ -52,7 +70,7 @@ const AddToPlaylistModal = ({ visible, onClose, track }) => {
         }
     };
 
-    const renderItem = ({ item }) => (
+    const renderItem = ({ item }: { item: Playlist }) => (
         <TouchableOpacity
             style={styles.itemContainer}
             onPress={() => handleAddToPlaylist(item)}

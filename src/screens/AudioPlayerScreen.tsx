@@ -18,7 +18,7 @@ import LoadingScreen from '../components/ui/LoadingScreen';
 import AudioPlayerService from '../services/AudioPlayerService';
 import FavoritesService from '../services/FavoritesService';
 import AddToPlaylistModal from '../components/playlists/AddToPlaylistModal';
-import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents } from 'react-native-track-player';
+import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents, useProgress } from 'react-native-track-player';
 import { AudioPlayerScreenProps } from './types';
 
 const { width } = Dimensions.get('window');
@@ -53,6 +53,9 @@ const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ route, navigation
   const favoriteAnim = useRef(new Animated.Value(1)).current;
   const controlsTimeoutRef = useRef(null);
   const doubleTapTimeoutRef = useRef(null);
+
+  // Progress hook
+  const progress = useProgress();
 
   // Auto-ocultar controles
   useEffect(() => {
@@ -111,20 +114,22 @@ const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ route, navigation
     }
   }, [searchQuery, playlist]);
 
-  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackProgress, Event.PlaybackTrackChanged], async (event) => {
+  // Update position and duration from progress hook
+  useEffect(() => {
+    if (!isSeeking) {
+      setPosition(progress.position);
+      setDuration(progress.duration);
+    }
+  }, [progress.position, progress.duration, isSeeking]);
+
+  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackTrackChanged], async (event) => {
     if (event.type === Event.PlaybackState) {
       setIsPlaying(event.state === State.Playing);
-    }
-    if (event.type === Event.PlaybackProgress) {
-      if (!isSeeking) {
-        setPosition(event.position);
-        setDuration(event.duration);
-      }
     }
     if (event.type === Event.PlaybackTrackChanged) {
       if (event.nextTrack !== undefined) {
         const trackId = await TrackPlayer.getTrack(event.nextTrack);
-        const fullTrack = playlist.find(t => t.id === trackId?.id) || trackId;
+        const fullTrack = playlist.find(t => t.id === trackId?.id);
         if (fullTrack) {
           setCurrentTrack(fullTrack);
           const index = playlist.findIndex(t => t.id === fullTrack.id);

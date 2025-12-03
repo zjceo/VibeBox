@@ -1,5 +1,216 @@
+// ==================== TYPES ====================
+export interface ColorPalette {
+  primary: string;
+  primaryDark: string;
+  primaryLight: string;
+  background: string;
+  backgroundLight: string;
+  backgroundDark: string;
+  surface: string;
+  textPrimary: string;
+  textSecondary: string;
+  textDisabled: string;
+  success: string;
+  error: string;
+  warning: string;
+  info: string;
+  overlay: string;
+  overlayDark: string;
+  overlayLight: string;
+  controlActive: string;
+  controlInactive: string;
+}
+
+export interface SizeConfig {
+  padding: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+  };
+  radius: {
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    full: number;
+  };
+  font: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    xxl: number;
+    xxxl: number;
+  };
+  icon: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    xxl: number;
+  };
+  button: {
+    small: number;
+    medium: number;
+    large: number;
+  };
+}
+
+export interface StoragePaths {
+  android: {
+    music: string;
+    downloads: string;
+    movies: string;
+    dcim: string;
+    videos: string;
+    podcasts: string;
+  };
+  ios: {
+    documents: string;
+    library: string;
+  };
+}
+
+export type RepeatMode = 'off' | 'track' | 'playlist';
+export type Quality = 'low' | 'medium' | 'high' | 'auto';
+export type PlayerCapability = 'play' | 'pause' | 'skipToNext' | 'skipToPrevious' | 'seekTo' | 'setRating';
+
+export interface PlayerConfig {
+  progressUpdateInterval: number;
+  controlsHideDelay: number;
+  seekInterval: number;
+  quality: {
+    low: Quality;
+    medium: Quality;
+    high: Quality;
+    auto: Quality;
+  };
+  repeatMode: {
+    off: RepeatMode;
+    track: RepeatMode;
+    playlist: RepeatMode;
+  };
+  capabilities: PlayerCapability[];
+}
+
+export interface Messages {
+  error: {
+    permission: string;
+    loadMedia: string;
+    playback: string;
+    fileNotFound: string;
+    unsupportedFormat: string;
+    networkError: string;
+  };
+  success: {
+    mediaLoaded: string;
+    playbackStarted: string;
+  };
+  info: {
+    noFiles: string;
+    scanning: string;
+    loading: string;
+    processing: string;
+  };
+  permissions: {
+    title: string;
+    message: string;
+    rationale: string;
+  };
+}
+
+export interface ScanConfig {
+  maxDepth: number;
+  ignoredFolders: string[];
+  ignoredFilePrefix: string[];
+  minFileSize: number;
+}
+
+export interface TimeFormat {
+  standard: string;
+  extended: string;
+}
+
+export interface Limits {
+  itemsPerLoad: number;
+  maxPlaylistSize: number;
+  minSearchLength: number;
+}
+
+export interface Animation {
+  duration: {
+    fast: number;
+    normal: number;
+    slow: number;
+  };
+  easing: {
+    linear: string;
+    ease: string;
+    easeIn: string;
+    easeOut: string;
+    easeInOut: string;
+  };
+}
+
+export interface ScreenNames {
+  home: string;
+  audioPlayer: string;
+  videoPlayer: string;
+  playlist: string;
+  settings: string;
+}
+
+export interface MimeTypes {
+  audio: {
+    mp3: string;
+    m4a: string;
+    aac: string;
+    wav: string;
+    flac: string;
+    ogg: string;
+  };
+  video: {
+    mp4: string;
+    mkv: string;
+    avi: string;
+    mov: string;
+    wmv: string;
+  };
+}
+
+export type SortOption = 'name_asc' | 'name_desc' | 'date_asc' | 'date_desc' | 'size_asc' | 'size_desc';
+export type FilterOption = 'all' | 'audio' | 'video' | 'recent' | 'favorites';
+export type LogLevel = 'verbose' | 'error';
+
+export interface SortOptions {
+  nameAsc: SortOption;
+  nameDesc: SortOption;
+  dateAsc: SortOption;
+  dateDesc: SortOption;
+  sizeAsc: SortOption;
+  sizeDesc: SortOption;
+}
+
+export interface FilterOptions {
+  all: FilterOption;
+  audio: FilterOption;
+  video: FilterOption;
+  recent: FilterOption;
+  favorites: FilterOption;
+}
+
+export interface Debug {
+  enableLogs: boolean;
+  showPerformance: boolean;
+  logLevel: LogLevel;
+}
+
 // ==================== COLORES ====================
-export const COLORS = {
+export const COLORS: ColorPalette = {
   // Colores principales
   primary: '#1DB954',        // Verde Spotify
   primaryDark: '#1AA34A',
@@ -33,7 +244,7 @@ export const COLORS = {
 };
 
 // ==================== TAMAÑOS ====================
-export const SIZES = {
+export const SIZES: SizeConfig = {
   // Espaciado
   padding: {
     xs: 4,
@@ -82,7 +293,7 @@ export const SIZES = {
 };
 
 // ==================== EXTENSIONES DE ARCHIVO ====================
-export const AUDIO_EXTENSIONS = [
+export const AUDIO_EXTENSIONS: readonly string[] = [
   '.mp3',
   '.m4a',
   '.aac',
@@ -92,9 +303,9 @@ export const AUDIO_EXTENSIONS = [
   '.wma',
   '.opus',
   '.webm',
-];
+] as const;
 
-export const VIDEO_EXTENSIONS = [
+export const VIDEO_EXTENSIONS: readonly string[] = [
   '.mp4',
   '.mkv',
   '.avi',
@@ -104,10 +315,10 @@ export const VIDEO_EXTENSIONS = [
   '.webm',
   '.m4v',
   '.3gp',
-];
+] as const;
 
 // ==================== RUTAS DE ALMACENAMIENTO ====================
-export const STORAGE_PATHS = {
+export const STORAGE_PATHS: StoragePaths = {
   android: {
     music: '/Music',
     downloads: '/Download',
@@ -123,7 +334,7 @@ export const STORAGE_PATHS = {
 };
 
 // ==================== CONFIGURACIÓN DEL REPRODUCTOR ====================
-export const PLAYER_CONFIG = {
+export const PLAYER_CONFIG: PlayerConfig = {
   // Intervalo de actualización del progreso (ms)
   progressUpdateInterval: 1000,
   
@@ -160,7 +371,7 @@ export const PLAYER_CONFIG = {
 };
 
 // ==================== MENSAJES ====================
-export const MESSAGES = {
+export const MESSAGES: Messages = {
   // Errores
   error: {
     permission: 'No se pudo obtener los permisos necesarios',
@@ -194,7 +405,7 @@ export const MESSAGES = {
 };
 
 // ==================== CONFIGURACIÓN DE ESCANEO ====================
-export const SCAN_CONFIG = {
+export const SCAN_CONFIG: ScanConfig = {
   // Profundidad máxima de carpetas a escanear
   maxDepth: 3,
   
@@ -222,13 +433,13 @@ export const SCAN_CONFIG = {
 };
 
 // ==================== FORMATO DE TIEMPO ====================
-export const TIME_FORMAT = {
+export const TIME_FORMAT: TimeFormat = {
   standard: 'mm:ss',
   extended: 'hh:mm:ss',
 };
 
 // ==================== LÍMITES ====================
-export const LIMITS = {
+export const LIMITS: Limits = {
   // Límite de archivos a mostrar por carga
   itemsPerLoad: 50,
   
@@ -240,7 +451,7 @@ export const LIMITS = {
 };
 
 // ==================== ANIMACIONES ====================
-export const ANIMATION = {
+export const ANIMATION: Animation = {
   // Duración de animaciones (ms)
   duration: {
     fast: 150,
@@ -259,7 +470,7 @@ export const ANIMATION = {
 };
 
 // ==================== NAVEGACIÓN ====================
-export const SCREEN_NAMES = {
+export const SCREEN_NAMES: ScreenNames = {
   home: 'Home',
   audioPlayer: 'AudioPlayer',
   videoPlayer: 'VideoPlayer',
@@ -268,7 +479,7 @@ export const SCREEN_NAMES = {
 };
 
 // ==================== MIME TYPES ====================
-export const MIME_TYPES = {
+export const MIME_TYPES: MimeTypes = {
   audio: {
     mp3: 'audio/mpeg',
     m4a: 'audio/mp4',
@@ -287,7 +498,7 @@ export const MIME_TYPES = {
 };
 
 // ==================== SORTING OPTIONS ====================
-export const SORT_OPTIONS = {
+export const SORT_OPTIONS: SortOptions = {
   nameAsc: 'name_asc',
   nameDesc: 'name_desc',
   dateAsc: 'date_asc',
@@ -297,7 +508,7 @@ export const SORT_OPTIONS = {
 };
 
 // ==================== FILTROS ====================
-export const FILTER_OPTIONS = {
+export const FILTER_OPTIONS: FilterOptions = {
   all: 'all',
   audio: 'audio',
   video: 'video',
@@ -306,7 +517,7 @@ export const FILTER_OPTIONS = {
 };
 
 // ==================== CONFIGURACIÓN DE DEBUG ====================
-export const DEBUG = {
+export const DEBUG: Debug = {
   enableLogs: __DEV__,
   showPerformance: __DEV__,
   logLevel: __DEV__ ? 'verbose' : 'error',
