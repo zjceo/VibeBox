@@ -8,18 +8,19 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  
 } from 'react-native';
-import CompactSidebar from '../components/ui/CompactSidebar';
-import LibraryPanel from '../components/ui/LibraryPanel';
-import MediaGrid from '../components/media/MediaGrid';
-import LoadingScreen from '../components/ui/LoadingScreen';
-import MiniPlayer from '../components/audio/MiniPlayer';
-import MediaService from './../services/MediaService';
-import PermissionsService from './../services/PermissionsService';
-import FavoritesService from './../services/FavoritesService';
-import FolderList from '../components/media/FolderList';
-import PlaylistList from '../components/playlists/PlaylistList';
-import PlaylistDetail from '../components/playlists/PlaylistDetail';
+import CompactSidebar from '../../components/ui/CompactSidebar';
+import LibraryPanel from '../../components/ui/LibraryPanel';
+import MediaGrid from '../../components/media/MediaGrid';
+import LoadingScreen from '../../components/ui/LoadingScreen';
+import MiniPlayer from '../../components/audio/MiniPlayer';
+import MediaService from '../../services/MediaService';
+import PermissionsService from '../../services/PermissionsService';
+import FavoritesService from '../../services/FavoritesService';
+import FolderList from '../../components/media/FolderList';
+import PlaylistList from '../../components/playlists/PlaylistList';
+import PlaylistDetail from '../../components/playlists/PlaylistDetail';
 
 const HomeScreen = ({ navigation }) => {
   const [activeSection, setActiveSection] = useState('home');

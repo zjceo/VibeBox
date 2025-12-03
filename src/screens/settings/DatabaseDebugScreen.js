@@ -11,8 +11,8 @@ import {
     TextInput,
     FlatList,
 } from 'react-native';
-import DatabaseService from '../services/DatabaseService';
-import MediaService from '../services/MediaService';
+import DatabaseService from '../../services/DatabaseService';
+import MediaService from '../../services/MediaService';
 
 const DatabaseDebugScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);

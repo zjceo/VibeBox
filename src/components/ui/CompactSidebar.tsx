@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import SettingsModal from './SettingsModal';
 
-type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders' | 'playlists';
+export type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders' | 'playlists';
 
 interface Section {
   id: SectionId;

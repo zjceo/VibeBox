@@ -14,12 +14,12 @@ import {
   TextInput,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import LoadingScreen from '../components/ui/LoadingScreen';
-import AudioPlayerService from '../services/AudioPlayerService';
-import FavoritesService from '../services/FavoritesService';
-import AddToPlaylistModal from '../components/playlists/AddToPlaylistModal';
+import LoadingScreen from '../../components/ui/LoadingScreen';
+import AudioPlayerService from '../../services/AudioPlayerService';
+import FavoritesService from '../../services/FavoritesService';
+import AddToPlaylistModal from '../../components/playlists/AddToPlaylistModal';
 import TrackPlayer, { Event, State, RepeatMode, useTrackPlayerEvents, useProgress } from 'react-native-track-player';
-import { AudioPlayerScreenProps } from './types';
+import { AudioPlayerScreenProps } from '../types';
 
 const { width } = Dimensions.get('window');
 

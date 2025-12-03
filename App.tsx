@@ -5,10 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TrackPlayer from 'react-native-track-player';
 
-import { HomeScreen, AudioPlayerScreen, VideoPlayerScreen } from './src/screens';
-import DatabaseDebugScreen from './src/screens/DatabaseDebugScreen';
-import AboutScreen from './src/screens/AboutScreen';
-import TermsScreen from './src/screens/TermsScreen';
+import { HomeScreen, AudioPlayerScreen, VideoPlayerScreen, DatabaseDebugScreen, AboutScreen, TermsScreen } from './src/screens';
 
 const Stack = createNativeStackNavigator();
 
