@@ -99,19 +99,11 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ navigation }) => {
         }
     };
 
-    const handlePress = async () => {
-        try {
-            // Get the current queue from TrackPlayer
-            const queue = await TrackPlayer.getQueue();
-            
-            // Navigate with proper parameters
-            navigation.navigate('AudioPlayer', {
-                track: currentTrack,
-                playlist: queue,
-            });
-        } catch (error) {
-            console.error('Error navigating to AudioPlayer:', error);
-        }
+    const handlePress = (): void => {
+        navigation.navigate('AudioPlayer', {
+            track: currentTrack,
+            playlist: [], // AudioPlayerScreen will use TrackPlayer's existing queue
+        });
     };
 
     if (!isVisible || !currentTrack) {
