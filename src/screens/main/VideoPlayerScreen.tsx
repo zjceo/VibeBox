@@ -13,6 +13,7 @@ import {
   Modal,
   Animated,
   TextInput,
+  BackHandler,
 } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
@@ -51,6 +52,21 @@ const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ route, navigation
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPlaylist, setFilteredPlaylist] = useState<MediaFile[]>(playlist);
   const [isBuffering, setIsBuffering] = useState(false);
+
+  // Handle Android Back Button
+  useEffect(() => {
+    const backAction = () => {
+      navigation.goBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   // Auto-ocultar controles
   useEffect(() => {
@@ -829,11 +845,11 @@ const styles = StyleSheet.create({
   itemTitle: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
     color: '#fff',
   },
   activeTitle: {
     color: '#FF0000',
+    fontWeight: '700',
   },
   playingDot: {
     width: 8,
@@ -846,8 +862,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
+    color: '#888',
     fontSize: 16,
-    color: '#666',
   },
 });
 

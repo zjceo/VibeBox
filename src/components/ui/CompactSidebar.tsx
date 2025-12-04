@@ -52,7 +52,8 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isLandscape && styles.scrollContentLandscape
+          isLandscape && styles.scrollContentLandscape,
+          { paddingBottom: 90 } // Extra padding for MiniPlayer
         ]}
         showsVerticalScrollIndicator={false}
       >

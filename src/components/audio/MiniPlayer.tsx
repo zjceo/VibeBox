@@ -7,6 +7,7 @@ import {
     Animated,
     Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TrackPlayer, {
     useTrackPlayerEvents,
     Event,
@@ -28,6 +29,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ navigation }) => {
     const playbackState = usePlaybackState();
     const progress = useProgress();
     const [slideAnim] = useState(new Animated.Value(100));
+    const insets = useSafeAreaInsets();
 
     useTrackPlayerEvents([Event.PlaybackTrackChanged], async (event) => {
         if (event.type === Event.PlaybackTrackChanged && event.nextTrack != null) {
@@ -97,6 +99,21 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ navigation }) => {
         }
     };
 
+    const handlePress = async () => {
+        try {
+            // Get the current queue from TrackPlayer
+            const queue = await TrackPlayer.getQueue();
+            
+            // Navigate with proper parameters
+            navigation.navigate('AudioPlayer', {
+                track: currentTrack,
+                playlist: queue,
+            });
+        } catch (error) {
+            console.error('Error navigating to AudioPlayer:', error);
+        }
+    };
+
     if (!isVisible || !currentTrack) {
         return null;
     }
@@ -110,7 +127,10 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ navigation }) => {
         <Animated.View
             style={[
                 styles.container,
-                { transform: [{ translateY: slideAnim }] }
+                { 
+                    transform: [{ translateY: slideAnim }],
+                    paddingBottom: insets.bottom || 8,
+                }
             ]}>
             {/* Progress Bar */}
             <View style={styles.progressBarContainer}>
@@ -124,7 +144,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ navigation }) => {
 
             <TouchableOpacity
                 style={styles.content}
-                onPress={() => navigation.navigate('AudioPlayer')}
+                onPress={handlePress}
                 activeOpacity={0.9}>
 
                 {/* Album Art / Icon */}

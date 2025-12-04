@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   TextInput,
+  BackHandler,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import LoadingScreen from '../../components/ui/LoadingScreen';
@@ -51,8 +52,8 @@ const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ route, navigation
   const skipAnimLeft = useRef(new Animated.Value(0)).current;
   const skipAnimRight = useRef(new Animated.Value(0)).current;
   const favoriteAnim = useRef(new Animated.Value(1)).current;
-  const controlsTimeoutRef = useRef(null);
-  const doubleTapTimeoutRef = useRef(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const doubleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Progress hook
   const progress = useProgress();
@@ -100,6 +101,21 @@ const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ route, navigation
   useEffect(() => {
     checkFavoriteStatus();
   }, [currentTrack]);
+
+  // Handle Android Back Button
+  useEffect(() => {
+    const backAction = () => {
+      navigation.goBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   // Filtrar playlist por búsqueda
   useEffect(() => {
@@ -826,18 +842,19 @@ const styles = StyleSheet.create({
   },
   searchField: {
     flex: 1,
-    fontSize: 15,
     color: '#fff',
+    fontSize: 14,
+    paddingVertical: 0,
   },
   clearText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#888',
+    marginLeft: 8,
   },
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
@@ -845,35 +862,34 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(29, 185, 84, 0.1)',
   },
   itemNumber: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#666',
-    width: 32,
+    width: 30,
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginRight: 12,
   },
   activeNumber: {
     color: '#1DB954',
+    fontWeight: 'bold',
   },
   itemInfo: {
     flex: 1,
   },
   itemTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
     color: '#fff',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   activeTitle: {
     color: '#1DB954',
+    fontWeight: 'bold',
   },
   itemArtist: {
     fontSize: 12,
     color: '#888',
   },
   playingIndicator: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginLeft: 12,
   },
   playingDot: {
     width: 8,
@@ -886,8 +902,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
+    color: '#888',
     fontSize: 16,
-    color: '#666',
   },
 });
 
