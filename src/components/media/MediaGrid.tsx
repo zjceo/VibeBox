@@ -12,16 +12,18 @@ import {
   ListRenderItem,
 } from 'react-native';
 import type { MediaFile } from '../../types';
+import { useSettings } from '../../context/SettingsContext';
 
 interface MediaCardProps {
   item: MediaFile;
   onPress?: (item: MediaFile) => void;
   type: 'audio' | 'video';
   cardWidth: number;
+  themeColors: any;
 }
 
 // Componente de Card memoizado
-const MediaCard = memo<MediaCardProps>(({ item, onPress, type, cardWidth }) => {
+const MediaCard = memo<MediaCardProps>(({ item, onPress, type, cardWidth, themeColors }) => {
   const handlePress = useCallback(() => {
     onPress && onPress(item);
   }, [item, onPress]);
@@ -44,14 +46,14 @@ const MediaCard = memo<MediaCardProps>(({ item, onPress, type, cardWidth }) => {
       onPress={handlePress}
       activeOpacity={0.8}>
       {/* Thumbnail */}
-      <View style={styles.thumbnail}>
-        <Text style={styles.thumbnailIcon}>
+      <View style={[styles.thumbnail, { backgroundColor: themeColors.surfaceHighlight }]}>
+        <Text style={[styles.thumbnailIcon, { color: themeColors.textTertiary }]}>
           {type === 'video' ? '🎬' : '🎵'}
         </Text>
 
         {/* Play Overlay */}
         <View style={styles.playOverlay}>
-          <View style={styles.playButton}>
+          <View style={[styles.playButton, { backgroundColor: themeColors.primary }]}>
             <Text style={styles.playIcon}>▶</Text>
           </View>
         </View>
@@ -66,10 +68,10 @@ const MediaCard = memo<MediaCardProps>(({ item, onPress, type, cardWidth }) => {
 
       {/* Info */}
       <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
+        <Text style={[styles.cardTitle, { color: themeColors.text }]} numberOfLines={1}>
           {getItemName(item)}
         </Text>
-        <Text style={styles.cardSubtitle}>
+        <Text style={[styles.cardSubtitle, { color: themeColors.textTertiary }]}>
           {formatFileSize(item.size)}
         </Text>
       </View>
@@ -78,18 +80,20 @@ const MediaCard = memo<MediaCardProps>(({ item, onPress, type, cardWidth }) => {
 }, (prevProps, nextProps) => {
   return (
     prevProps.item.id === nextProps.item.id &&
-    prevProps.cardWidth === nextProps.cardWidth
+    prevProps.cardWidth === nextProps.cardWidth &&
+    prevProps.themeColors === nextProps.themeColors
   );
 });
 
 // Componente de header memoizado
 interface SectionHeaderProps {
   title: string;
+  themeColors: any;
 }
 
-const SectionHeader = memo<SectionHeaderProps>(({ title }) => (
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionHeaderText}>{title}</Text>
+const SectionHeader = memo<SectionHeaderProps>(({ title, themeColors }) => (
+  <View style={[styles.sectionHeader, { borderBottomColor: themeColors.border }]}>
+    <Text style={[styles.sectionHeaderText, { color: themeColors.text }]}>{title}</Text>
   </View>
 ));
 
@@ -115,6 +119,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({
 }) => {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
+  const { themeColors } = useSettings();
 
   // Calcular dimensiones
   const dimensions = useMemo(() => {
@@ -146,28 +151,29 @@ const MediaGrid: React.FC<MediaGridProps> = ({
       onPress={onItemPress}
       type={type}
       cardWidth={dimensions.cardWidth}
+      themeColors={themeColors}
     />
-  ), [onItemPress, type, dimensions.cardWidth]);
+  ), [onItemPress, type, dimensions.cardWidth, themeColors]);
 
   // Render section header
   const renderSectionHeader = useCallback(({ section }: { section: SectionListData<MediaFile, MediaSection> }) => (
-    <SectionHeader title={section.title} />
-  ), []);
+    <SectionHeader title={section.title} themeColors={themeColors} />
+  ), [themeColors]);
 
   // Empty component
   const renderEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>
+      <Text style={[styles.emptyIcon, { color: themeColors.textTertiary }]}>
         {type === 'video' ? '🎬' : '🎵'}
       </Text>
-      <Text style={styles.emptyTitle}>
+      <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
         No hay {type === 'video' ? 'videos' : 'audios'}
       </Text>
-      <Text style={styles.emptySubtitle}>
+      <Text style={[styles.emptySubtitle, { color: themeColors.textTertiary }]}>
         Agrega archivos a tu dispositivo
       </Text>
     </View>
-  ), [type]);
+  ), [type, themeColors]);
 
   // Get item layout
   const getItemLayout = useCallback((data: ArrayLike<MediaFile> | null, index: number) => {
@@ -201,6 +207,7 @@ const MediaGrid: React.FC<MediaGridProps> = ({
                   onPress={onItemPress}
                   type={type}
                   cardWidth={dimensions.cardWidth}
+                  themeColors={themeColors}
                 />
               ))}
             </View>
@@ -266,7 +273,6 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: '100%',
     aspectRatio: 16 / 9,
-    backgroundColor: '#1a1a1a',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -289,7 +295,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1DB954',
     justifyContent: 'center',
     alignItems: 'center',
     transform: [{ scale: 0.9 }],
@@ -319,13 +324,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#ffffff',
     marginBottom: 4,
     letterSpacing: -0.3,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#666666',
     fontWeight: '500',
   },
   emptyContainer: {
@@ -342,23 +345,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#ffffff',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#666666',
   },
   sectionHeader: {
     paddingVertical: 12,
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
   },
   sectionHeaderText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
   },
 });
 

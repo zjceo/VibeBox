@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackNavigationProp } from '../../types';
+import { useSettings } from '../../context/SettingsContext';
 
 /**
  * Props del componente SettingsModal
@@ -29,6 +30,7 @@ interface SettingItemProps {
   title: string;
   subtitle?: string;
   rightComponent: React.ReactNode;
+  colors: any;
 }
 
 /**
@@ -46,6 +48,7 @@ interface ActionItemProps {
  */
 interface SectionHeaderProps {
   title: string;
+  color: string;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -54,10 +57,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onRescan
 }) => {
   const navigation = useNavigation<RootStackNavigationProp>();
-  const [autoPlay, setAutoPlay] = useState<boolean>(true);
-  const [notifications, setNotifications] = useState<boolean>(false);
-  const [darkMode, setDarkMode] = useState<boolean>(true);
-  const [highQuality, setHighQuality] = useState<boolean>(true);
+  const { 
+    theme, 
+    setTheme, 
+    notifications, 
+    setNotifications, 
+    autoPlay, 
+    setAutoPlay, 
+    highQuality, 
+    setHighQuality 
+  } = useSettings();
+
+  const isDark = theme === 'dark';
+  const setDarkMode = (value: boolean) => setTheme(value ? 'dark' : 'light');
+
+  const colors = {
+    background: isDark ? '#121212' : '#ffffff',
+    text: isDark ? '#ffffff' : '#000000',
+    subtext: isDark ? '#888888' : '#666666',
+    itemBackground: isDark ? '#1a1a1a' : '#f5f5f5',
+    border: isDark ? '#2a2a2a' : '#e0e0e0',
+    iconBg: isDark ? 'rgba(29, 185, 84, 0.15)' : 'rgba(29, 185, 84, 0.1)',
+    iconBorder: isDark ? 'rgba(29, 185, 84, 0.3)' : 'rgba(29, 185, 84, 0.2)',
+    closeBg: isDark ? '#2a2a2a' : '#f0f0f0',
+    closeIcon: isDark ? '#ffffff' : '#000000',
+    sectionHeader: isDark ? '#666666' : '#888888',
+  };
 
   const handleRescanMedia = (): void => {
     Alert.alert(
@@ -100,14 +125,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     icon,
     title,
     subtitle,
-    rightComponent
+    rightComponent,
+    colors
   }) => (
-    <View style={styles.settingItem}>
+    <View style={[styles.settingItem, { backgroundColor: colors.itemBackground }]}>
       <View style={styles.settingLeft}>
         <Text style={styles.settingIcon}>{icon}</Text>
         <View style={styles.settingText}>
-          <Text style={styles.settingTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+          {subtitle && <Text style={[styles.settingSubtitle, { color: colors.subtext }]}>{subtitle}</Text>}
         </View>
       </View>
       <View style={styles.settingRight}>
@@ -116,8 +142,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     </View>
   );
 
-  const SectionHeader: React.FC<SectionHeaderProps> = ({ title }) => (
-    <Text style={styles.sectionHeader}>{title}</Text>
+  const SectionHeader: React.FC<SectionHeaderProps> = ({ title, color }) => (
+    <Text style={[styles.sectionHeader, { color }]}>{title}</Text>
   );
 
   return (
@@ -127,23 +153,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       transparent={true}
       onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={styles.headerLeft}>
-              <View style={styles.iconContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.iconBg, borderColor: colors.iconBorder }]}>
                 <Text style={styles.headerIcon}>⚙️</Text>
               </View>
               <View>
-                <Text style={styles.headerTitle}>Configuración</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Configuración</Text>
                 <Text style={styles.headerSubtitle}>VibeBox v1.0</Text>
               </View>
             </View>
             <TouchableOpacity
-              style={styles.closeButton}
+              style={[styles.closeButton, { backgroundColor: colors.closeBg }]}
               onPress={onClose}
               activeOpacity={0.7}>
-              <Text style={styles.closeIcon}>✕</Text>
+              <Text style={[styles.closeIcon, { color: colors.closeIcon }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -151,17 +177,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 
             {/* Reproducción */}
-            <SectionHeader title="REPRODUCCIÓN" />
+            <SectionHeader title="REPRODUCCIÓN" color={colors.sectionHeader} />
 
             <SettingItem
               icon="▶️"
               title="Reproducción automática"
               subtitle="Continuar con la siguiente canción"
+              colors={colors}
               rightComponent={
                 <Switch
                   value={autoPlay}
                   onValueChange={setAutoPlay}
-                  trackColor={{ false: '#3a3a3a', true: '#1DB954' }}
+                  trackColor={{ false: isDark ? '#3a3a3a' : '#d0d0d0', true: '#1DB954' }}
                   thumbColor="#ffffff"
                 />
               }
@@ -171,28 +198,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               icon="🎵"
               title="Alta calidad"
               subtitle="Mejor calidad de audio"
+              colors={colors}
               rightComponent={
                 <Switch
                   value={highQuality}
                   onValueChange={setHighQuality}
-                  trackColor={{ false: '#3a3a3a', true: '#1DB954' }}
+                  trackColor={{ false: isDark ? '#3a3a3a' : '#d0d0d0', true: '#1DB954' }}
                   thumbColor="#ffffff"
                 />
               }
             />
 
             {/* Apariencia */}
-            <SectionHeader title="APARIENCIA" />
+            <SectionHeader title="APARIENCIA" color={colors.sectionHeader} />
 
             <SettingItem
               icon="🌙"
               title="Modo oscuro"
-              subtitle="Tema oscuro activado"
+              subtitle={isDark ? "Tema oscuro activado" : "Tema claro activado"}
+              colors={colors}
               rightComponent={
                 <Switch
-                  value={darkMode}
+                  value={isDark}
                   onValueChange={setDarkMode}
-                  trackColor={{ false: '#3a3a3a', true: '#1DB954' }}
+                  trackColor={{ false: isDark ? '#3a3a3a' : '#d0d0d0', true: '#1DB954' }}
                   thumbColor="#ffffff"
                 />
               }
@@ -202,45 +231,46 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               icon="🔔"
               title="Notificaciones"
               subtitle="Alertas de reproducción"
+              colors={colors}
               rightComponent={
                 <Switch
                   value={notifications}
                   onValueChange={setNotifications}
-                  trackColor={{ false: '#3a3a3a', true: '#1DB954' }}
+                  trackColor={{ false: isDark ? '#3a3a3a' : '#d0d0d0', true: '#1DB954' }}
                   thumbColor="#ffffff"
                 />
               }
             />
 
             {/* Biblioteca */}
-            <SectionHeader title="BIBLIOTECA" />
+            <SectionHeader title="BIBLIOTECA" color={colors.sectionHeader} />
 
             <TouchableOpacity
-              style={styles.actionItem}
+              style={[styles.actionItem, { backgroundColor: colors.itemBackground }]}
               onPress={handleRescanMedia}
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>🔄</Text>
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Escanear archivos</Text>
-                <Text style={styles.actionSubtitle}>Buscar nuevos archivos multimedia</Text>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Escanear archivos</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.subtext }]}>Buscar nuevos archivos multimedia</Text>
               </View>
-              <Text style={styles.actionArrow}>›</Text>
+              <Text style={[styles.actionArrow, { color: colors.sectionHeader }]}>›</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionItem}
+              style={[styles.actionItem, { backgroundColor: colors.itemBackground }]}
               onPress={handleClearCache}
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>🗑️</Text>
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Limpiar caché</Text>
-                <Text style={styles.actionSubtitle}>Liberar espacio de almacenamiento</Text>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Limpiar caché</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.subtext }]}>Liberar espacio de almacenamiento</Text>
               </View>
-              <Text style={styles.actionArrow}>›</Text>
+              <Text style={[styles.actionArrow, { color: colors.sectionHeader }]}>›</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionItem}
+              style={[styles.actionItem, { backgroundColor: colors.itemBackground }]}
               onPress={() => {
                 onClose();
                 navigation.navigate('DatabaseDebug');
@@ -248,17 +278,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>🔍</Text>
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Database Debug</Text>
-                <Text style={styles.actionSubtitle}>Ver estadísticas y gestionar la base de datos</Text>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Database Debug</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.subtext }]}>Ver estadísticas y gestionar la base de datos</Text>
               </View>
-              <Text style={styles.actionArrow}>›</Text>
+              <Text style={[styles.actionArrow, { color: colors.sectionHeader }]}>›</Text>
             </TouchableOpacity>
 
             {/* Acerca de */}
-            <SectionHeader title="INFORMACIÓN" />
+            <SectionHeader title="INFORMACIÓN" color={colors.sectionHeader} />
 
             <TouchableOpacity
-              style={styles.actionItem}
+              style={[styles.actionItem, { backgroundColor: colors.itemBackground }]}
               onPress={() => {
                 onClose();
                 navigation.navigate('About');
@@ -266,14 +296,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>ℹ️</Text>
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Acerca de VibeBox</Text>
-                <Text style={styles.actionSubtitle}>Versión 1.0.0</Text>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Acerca de VibeBox</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.subtext }]}>Versión 1.0.0</Text>
               </View>
-              <Text style={styles.actionArrow}>›</Text>
+              <Text style={[styles.actionArrow, { color: colors.sectionHeader }]}>›</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionItem}
+              style={[styles.actionItem, { backgroundColor: colors.itemBackground }]}
               onPress={() => {
                 onClose();
                 navigation.navigate('Terms');
@@ -281,14 +311,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               activeOpacity={0.7}>
               <Text style={styles.actionIcon}>📄</Text>
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Términos y privacidad</Text>
-                <Text style={styles.actionSubtitle}>Políticas de uso</Text>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Términos y privacidad</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.subtext }]}>Políticas de uso</Text>
               </View>
-              <Text style={styles.actionArrow}>›</Text>
+              <Text style={[styles.actionArrow, { color: colors.sectionHeader }]}>›</Text>
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Hecho con ❤️ para reproducir tu música y videos</Text>
+              <Text style={[styles.footerText, { color: colors.subtext }]}>Hecho con ❤️ para reproducir tu música y videos</Text>
             </View>
 
           </ScrollView>
@@ -307,14 +337,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   modalContainer: {
-    backgroundColor: '#121212',
     borderRadius: 24,
     width: '100%',
     maxWidth: 480,
     maxHeight: '85%',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.5,
@@ -328,7 +356,6 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -339,11 +366,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: 'rgba(29, 185, 84, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(29, 185, 84, 0.3)',
   },
   headerIcon: {
     fontSize: 28,
@@ -351,7 +376,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#ffffff',
     marginBottom: 2,
   },
   headerSubtitle: {
@@ -363,13 +387,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeIcon: {
     fontSize: 20,
-    color: '#ffffff',
     fontWeight: '300',
   },
   content: {
@@ -378,7 +400,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#666666',
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 10,
@@ -390,7 +411,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#1a1a1a',
     marginHorizontal: 16,
     marginBottom: 6,
     borderRadius: 12,
@@ -410,12 +430,10 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#ffffff',
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 12,
-    color: '#888888',
   },
   settingRight: {
     marginLeft: 16,
@@ -425,7 +443,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#1a1a1a',
     marginHorizontal: 16,
     marginBottom: 6,
     borderRadius: 12,
@@ -440,16 +457,13 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#ffffff',
     marginBottom: 2,
   },
   actionSubtitle: {
     fontSize: 12,
-    color: '#888888',
   },
   actionArrow: {
     fontSize: 26,
-    color: '#666666',
     marginLeft: 12,
   },
   footer: {
@@ -460,7 +474,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: '#666666',
     textAlign: 'center',
   },
 });

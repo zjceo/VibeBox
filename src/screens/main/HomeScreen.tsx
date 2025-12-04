@@ -21,8 +21,10 @@ import FavoritesService from '../../services/FavoritesService';
 import FolderList from '../../components/media/FolderList';
 import PlaylistList from '../../components/playlists/PlaylistList';
 import PlaylistDetail from '../../components/playlists/PlaylistDetail';
+import { useSettings } from '../../context/SettingsContext';
 
 const HomeScreen = ({ navigation }) => {
+  const { themeColors, theme } = useSettings();
   const [activeSection, setActiveSection] = useState<SectionId>('home');
   const [mediaFiles, setMediaFiles] = useState({
     audio: [],
@@ -209,16 +211,19 @@ const HomeScreen = ({ navigation }) => {
 
   if (!hasPermission) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <StatusBar 
+          barStyle={theme === 'dark' ? "light-content" : "dark-content"} 
+          backgroundColor={themeColors.background} 
+        />
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionIcon}>🔒</Text>
-          <Text style={styles.permissionTitle}>Permisos necesarios</Text>
-          <Text style={styles.permissionText}>
+          <Text style={[styles.permissionTitle, { color: themeColors.text }]}>Permisos necesarios</Text>
+          <Text style={[styles.permissionText, { color: themeColors.textSecondary }]}>
             VibeBox necesita acceso a tu almacenamiento para reproducir tus archivos multimedia
           </Text>
           <TouchableOpacity
-            style={styles.permissionButton}
+            style={[styles.permissionButton, { backgroundColor: themeColors.primary }]}
             onPress={checkPermissionsAndLoadMedia}
             activeOpacity={0.8}>
             <Text style={styles.permissionButtonText}>Conceder permisos</Text>
@@ -233,8 +238,11 @@ const HomeScreen = ({ navigation }) => {
   const mediaData = shouldGroup ? groupMediaByFolder(currentMedia) : currentMedia;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <StatusBar 
+        barStyle={theme === 'dark' ? "light-content" : "dark-content"} 
+        backgroundColor={themeColors.background} 
+      />
       <View style={styles.mainContainer}>
         <CompactSidebar
           activeSection={activeSection}
@@ -242,7 +250,7 @@ const HomeScreen = ({ navigation }) => {
           onRescan={handleRescan}
         />
 
-        <View style={styles.contentArea}>
+        <View style={[styles.contentArea, { backgroundColor: themeColors.background }]}>
           {activeSection === 'home' && showLibraryPanel ? (
             <LibraryPanel
               mediaFiles={mediaFiles}
@@ -251,12 +259,12 @@ const HomeScreen = ({ navigation }) => {
             />
           ) : (
             <>
-              <View style={styles.header}>
+              <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
                 <View style={styles.headerLeft}>
-                  <Text style={styles.headerTitle}>
+                  <Text style={[styles.headerTitle, { color: themeColors.text }]}>
                     {getSectionTitle()}
                   </Text>
-                  <Text style={styles.headerSubtitle}>
+                  <Text style={[styles.headerSubtitle, { color: themeColors.textTertiary }]}>
                     {activeSection === 'playlists' && !selectedPlaylist
                       ? 'Tus colecciones'
                       : `${currentMedia.length} archivos`}
@@ -265,7 +273,7 @@ const HomeScreen = ({ navigation }) => {
                 <View style={styles.headerRight}>
                   {currentMedia.length > 0 && activeSection !== 'folders' && activeSection !== 'playlists' && (
                     <TouchableOpacity
-                      style={styles.headerButtonPrimary}
+                      style={[styles.headerButtonPrimary, { backgroundColor: themeColors.primary }]}
                       activeOpacity={0.7}
                       onPress={() => {
                         if (currentMedia.length > 0) {
@@ -290,8 +298,8 @@ const HomeScreen = ({ navigation }) => {
                       <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor="#1DB954"
-                        colors={['#1DB954']}
+                        tintColor={themeColors.primary}
+                        colors={[themeColors.primary]}
                       />
                     }
                   />
@@ -309,8 +317,8 @@ const HomeScreen = ({ navigation }) => {
                         <RefreshControl
                           refreshing={refreshing}
                           onRefresh={onRefresh}
-                          tintColor="#1DB954"
-                          colors={['#1DB954']}
+                          tintColor={themeColors.primary}
+                          colors={[themeColors.primary]}
                         />
                       }
                     />
@@ -325,8 +333,8 @@ const HomeScreen = ({ navigation }) => {
                       <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor="#1DB954"
-                        colors={['#1DB954']}
+                        tintColor={themeColors.primary}
+                        colors={[themeColors.primary]}
                       />
                     }
                   />
@@ -344,7 +352,6 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
   },
   mainContainer: {
     flex: 1,
@@ -352,7 +359,6 @@ const styles = StyleSheet.create({
   },
   contentArea: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
   },
   contentContainer: {
     flex: 1,
@@ -365,7 +371,6 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     paddingTop: 32,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
   },
   headerLeft: {
     flex: 1,
@@ -375,13 +380,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#ffffff',
     marginBottom: 6,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666666',
     fontWeight: '500',
   },
   headerRight: {
@@ -392,18 +395,15 @@ const styles = StyleSheet.create({
   headerButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#1a1a1a',
     borderRadius: 10,
   },
   headerButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
   },
   headerButtonPrimary: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#1DB954',
     borderRadius: 10,
   },
   headerButtonPrimaryText: {
@@ -424,19 +424,16 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
     marginBottom: 12,
     textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,
-    color: '#888888',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
   },
   permissionButton: {
-    backgroundColor: '#1DB954',
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 25,

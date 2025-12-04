@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import SettingsModal from './SettingsModal';
+import { useSettings } from '../../context/SettingsContext';
 
 export type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders' | 'playlists';
 
@@ -31,6 +32,7 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const { height, width } = useWindowDimensions();
   const isLandscape = width > height;
+  const { themeColors, theme } = useSettings();
 
   const sections: Section[] = [
     { id: 'home', icon: '🏠', label: 'Inicio' },
@@ -42,7 +44,11 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
   ];
 
   return (
-    <View style={[styles.container, isLandscape && styles.containerLandscape]}>
+    <View style={[
+      styles.container, 
+      { backgroundColor: themeColors.surface, borderRightColor: themeColors.border },
+      isLandscape && styles.containerLandscape
+    ]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -52,7 +58,7 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
       >
         {/* Logo */}
         <View style={[styles.logoContainer, isLandscape && styles.logoContainerLandscape]}>
-          <View style={[styles.logo, isLandscape && styles.logoLandscape]}>
+          <View style={[styles.logo, isLandscape && styles.logoLandscape, { backgroundColor: themeColors.primary, shadowColor: themeColors.primary }]}>
             <Text style={[styles.logoText, isLandscape && styles.logoTextLandscape]}>V</Text>
           </View>
         </View>
@@ -65,21 +71,29 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
               style={[
                 styles.navButton,
                 isLandscape && styles.navButtonLandscape,
-                activeSection === section.id && styles.navButtonActive,
+                activeSection === section.id && [styles.navButtonActive, { backgroundColor: themeColors.primary, shadowColor: themeColors.primary }],
               ]}
               onPress={() => onSectionChange(section.id)}
               activeOpacity={0.7}>
-              <Text style={[styles.navIcon, isLandscape && styles.navIconLandscape]}>{section.icon}</Text>
+              <Text style={[
+                styles.navIcon, 
+                isLandscape && styles.navIconLandscape,
+                { color: activeSection === section.id ? '#ffffff' : themeColors.textSecondary } // Active icon always white
+              ]}>{section.icon}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Menu Button */}
         <TouchableOpacity
-          style={[styles.menuButton, isLandscape && styles.menuButtonLandscape]}
+          style={[
+            styles.menuButton, 
+            { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
+            isLandscape && styles.menuButtonLandscape
+          ]}
           activeOpacity={0.7}
           onPress={() => setShowSettings(true)}>
-          <Text style={[styles.menuIcon, isLandscape && styles.menuIconLandscape]}>☰</Text>
+          <Text style={[styles.menuIcon, { color: themeColors.textSecondary }, isLandscape && styles.menuIconLandscape]}>☰</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -96,9 +110,7 @@ const CompactSidebar: React.FC<CompactSidebarProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: 80,
-    backgroundColor: '#121212',
     borderRightWidth: 1,
-    borderRightColor: '#1a1a1a',
     height: '100%',
   },
   containerLandscape: {
@@ -124,10 +136,8 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#1DB954',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1DB954',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -169,8 +179,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   navButtonActive: {
-    backgroundColor: '#1DB954',
-    shadowColor: '#1DB954',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
@@ -188,7 +196,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     marginTop: 20,
   },
   menuButtonLandscape: {
@@ -198,7 +205,6 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: 20,
-    color: '#888888',
   },
   menuIconLandscape: {
     fontSize: 18,

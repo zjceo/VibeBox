@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import PlaylistService from '../../services/PlaylistService';
 import CreatePlaylistModal from './CreatePlaylistModal';
+import { useSettings } from '../../context/SettingsContext';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = width > 600 ? 4 : 2;
@@ -35,6 +36,7 @@ interface PlaylistListProps {
 const PlaylistList: React.FC<PlaylistListProps> = ({ onPlaylistPress, refreshControl }) => {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [isModalVisible, setModalVisible] = useState(false);
+    const { themeColors } = useSettings();
 
     useEffect(() => {
         loadPlaylists();
@@ -88,11 +90,11 @@ const PlaylistList: React.FC<PlaylistListProps> = ({ onPlaylistPress, refreshCon
                     style={styles.itemContainer}
                     onPress={() => setModalVisible(true)}
                     activeOpacity={0.7}>
-                    <View style={[styles.coverContainer, styles.addContainer]}>
-                        <Text style={styles.addIcon}>+</Text>
+                    <View style={[styles.coverContainer, styles.addContainer, { backgroundColor: themeColors.surfaceHighlight, borderColor: themeColors.border }]}>
+                        <Text style={[styles.addIcon, { color: themeColors.textSecondary }]}>+</Text>
                     </View>
-                    <Text style={styles.itemTitle}>Nueva Lista</Text>
-                    <Text style={styles.itemSubtitle}>Crear colección</Text>
+                    <Text style={[styles.itemTitle, { color: themeColors.text }]}>Nueva Lista</Text>
+                    <Text style={[styles.itemSubtitle, { color: themeColors.textSecondary }]}>Crear colección</Text>
                 </TouchableOpacity>
             );
         }
@@ -103,11 +105,11 @@ const PlaylistList: React.FC<PlaylistListProps> = ({ onPlaylistPress, refreshCon
                 onPress={() => onPlaylistPress(item)}
                 onLongPress={() => handleDeletePlaylist(item.id, item.name)}
                 activeOpacity={0.7}>
-                <View style={styles.coverContainer}>
+                <View style={[styles.coverContainer, { backgroundColor: themeColors.surfaceHighlight }]}>
                     {item.cover_image ? (
                         <Image source={{ uri: item.cover_image }} style={styles.coverImage} />
                     ) : (
-                        <View style={styles.placeholderCover}>
+                        <View style={[styles.placeholderCover, { backgroundColor: themeColors.surfaceHighlight }]}>
                             <Text style={styles.placeholderIcon}>🎵</Text>
                         </View>
                     )}
@@ -115,10 +117,10 @@ const PlaylistList: React.FC<PlaylistListProps> = ({ onPlaylistPress, refreshCon
                         <Text style={styles.countText}>{item.item_count}</Text>
                     </View>
                 </View>
-                <Text style={styles.itemTitle} numberOfLines={1}>
+                <Text style={[styles.itemTitle, { color: themeColors.text }]} numberOfLines={1}>
                     {item.name}
                 </Text>
-                <Text style={styles.itemSubtitle}>
+                <Text style={[styles.itemSubtitle, { color: themeColors.textSecondary }]}>
                     {item.item_count} canciones
                 </Text>
             </TouchableOpacity>
@@ -165,7 +167,6 @@ const styles = StyleSheet.create({
         width: ITEM_WIDTH,
         height: ITEM_WIDTH,
         borderRadius: 8,
-        backgroundColor: '#282828',
         marginBottom: 12,
         overflow: 'hidden',
         position: 'relative',
@@ -178,33 +179,27 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#282828',
     },
     placeholderIcon: {
         fontSize: 32,
     },
     addContainer: {
-        backgroundColor: '#1a1a1a',
         borderWidth: 2,
-        borderColor: '#333',
         borderStyle: 'dashed',
         justifyContent: 'center',
         alignItems: 'center',
     },
     addIcon: {
         fontSize: 48,
-        color: '#666',
         fontWeight: '300',
     },
     itemTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#ffffff',
         marginBottom: 4,
     },
     itemSubtitle: {
         fontSize: 12,
-        color: '#888888',
     },
     countBadge: {
         position: 'absolute',

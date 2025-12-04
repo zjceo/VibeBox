@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TrackPlayer from 'react-native-track-player';
@@ -13,37 +13,28 @@ import {
   AboutScreen, 
   TermsScreen 
 } from './src/screens';
+import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
-
-  useEffect(() => {
-    async function setup() {
-      try {
-        await TrackPlayer.setupPlayer();
-        console.log("TrackPlayer OK");
-      } catch (e: any) {
-        if (e.message && e.message.includes('already been initialized')) {
-          console.log("TrackPlayer already initialized");
-        } else {
-          console.log("TrackPlayer setup error", e);
-        }
-      }
-    }
-    setup();
-  }, []);
+const AppContent = () => {
+  const { theme } = useSettings();
+  const isDark = theme === 'dark';
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer theme={DarkTheme}>
-        <StatusBar barStyle="light-content" />
+      <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme}>
+        <StatusBar 
+          barStyle={isDark ? "light-content" : "dark-content"} 
+          backgroundColor={isDark ? "#000000" : "#ffffff"}
+        />
 
         <Stack.Navigator
           initialRouteName="Home"
           screenOptions={{ 
             headerShown: false,
             animation: 'slide_from_right',
+            contentStyle: { backgroundColor: isDark ? '#000000' : '#ffffff' }
           }}
         >
           <Stack.Screen name="Home" component={HomeScreen} />
@@ -68,5 +59,30 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
+  );
+};
+
+export default function App() {
+
+  useEffect(() => {
+    async function setup() {
+      try {
+        await TrackPlayer.setupPlayer();
+        console.log("TrackPlayer OK");
+      } catch (e: any) {
+        if (e.message && e.message.includes('already been initialized')) {
+          console.log("TrackPlayer already initialized");
+        } else {
+          console.log("TrackPlayer setup error", e);
+        }
+      }
+    }
+    setup();
+  }, []);
+
+  return (
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
   );
 }

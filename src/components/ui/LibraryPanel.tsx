@@ -9,6 +9,7 @@ import {
   ListRenderItem,
 } from 'react-native';
 import type { MediaFile } from '../../types';
+import { useSettings } from '../../context/SettingsContext';
 
 type SectionId = 'home' | 'audio' | 'video' | 'favorites' | 'folders';
 
@@ -28,6 +29,8 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
   onMediaPress,
   activeSection
 }) => {
+  const { themeColors } = useSettings();
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -63,18 +66,18 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
         style={styles.mediaItem}
         onPress={() => onMediaPress(item)}
         activeOpacity={0.7}>
-        <View style={styles.mediaItemContent}>
+        <View style={[styles.mediaItemContent, { backgroundColor: themeColors.surfaceHighlight }]}>
           <View style={[
             styles.mediaIcon,
-            !isAudio && styles.videoIcon
+            { backgroundColor: isAudio ? 'rgba(29, 185, 84, 0.1)' : 'rgba(255, 59, 48, 0.1)' }
           ]}>
             <Text style={styles.mediaIconText}>{icon}</Text>
           </View>
           <View style={styles.mediaInfo}>
-            <Text style={styles.mediaName} numberOfLines={2}>
+            <Text style={[styles.mediaName, { color: themeColors.text }]} numberOfLines={2}>
               {getItemName(item)}
             </Text>
-            <Text style={styles.mediaDetails}>
+            <Text style={[styles.mediaDetails, { color: themeColors.textSecondary }]}>
               {item.extension || item.type.toUpperCase()} • {formatFileSize(item.size)}
             </Text>
           </View>
@@ -104,20 +107,20 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
   const headerInfo = getHeaderInfo();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.surface, borderRightColor: themeColors.border }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{headerInfo.title}</Text>
-        <Text style={styles.subtitle}>{headerInfo.subtitle}</Text>
+      <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
+        <Text style={[styles.title, { color: themeColors.text }]}>{headerInfo.title}</Text>
+        <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>{headerInfo.subtitle}</Text>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+      <View style={[styles.searchContainer, { backgroundColor: themeColors.surfaceHighlight }]}>
+        <Text style={[styles.searchIcon, { color: themeColors.textSecondary }]}>🔍</Text>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: themeColors.text }]}
           placeholder="Buscar..."
-          placeholderTextColor="#666666"
+          placeholderTextColor={themeColors.textTertiary}
         />
       </View>
 
@@ -130,10 +133,10 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>
+            <Text style={[styles.emptyIcon, { color: themeColors.textTertiary }]}>
               {activeSection === 'audio' ? '🎵' : activeSection === 'video' ? '🎬' : '📁'}
             </Text>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
               {activeSection === 'audio' ? 'No hay archivos de audio' :
                 activeSection === 'video' ? 'No hay videos' :
                   'No hay archivos'}
@@ -148,33 +151,27 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: 320,
-    backgroundColor: '#0f0f0f',
     borderRightWidth: 1,
-    borderRightColor: '#1a1a1a',
   },
   header: {
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#ffffff',
     marginBottom: 4,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 13,
-    color: '#666666',
     fontWeight: '500',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     marginHorizontal: 20,
     marginVertical: 20,
@@ -189,7 +186,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#ffffff',
     padding: 0,
   },
   listContent: {
@@ -203,7 +199,6 @@ const styles = StyleSheet.create({
   mediaItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 12,
     padding: 14,
   },
@@ -211,13 +206,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: 'rgba(29, 185, 84, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  videoIcon: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
   },
   mediaIconText: {
     fontSize: 20,
@@ -228,12 +219,10 @@ const styles = StyleSheet.create({
   mediaName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
     marginBottom: 4,
   },
   mediaDetails: {
     fontSize: 12,
-    color: '#666666',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -247,7 +236,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#666666',
   },
 });
 

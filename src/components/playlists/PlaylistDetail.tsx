@@ -8,6 +8,7 @@ import {
     Alert,
 } from 'react-native';
 import PlaylistService from '../../services/PlaylistService';
+import { useSettings } from '../../context/SettingsContext';
 
 interface Playlist {
     id: string;
@@ -30,6 +31,7 @@ interface PlaylistDetailProps {
 
 const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlist, onBack, onItemPress }) => {
     const [items, setItems] = useState<MediaItem[]>([]);
+    const { themeColors } = useSettings();
 
     useEffect(() => {
         loadItems();
@@ -68,23 +70,23 @@ const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlist, onBack, onIte
 
     const renderItem = ({ item, index }: { item: MediaItem; index: number }) => (
         <TouchableOpacity
-            style={styles.itemContainer}
+            style={[styles.itemContainer, { borderBottomColor: themeColors.border }]}
             onPress={() => onItemPress(item)}
             onLongPress={() => handleRemoveItem(item.id)}
             activeOpacity={0.7}>
-            <Text style={styles.indexText}>{index + 1}</Text>
+            <Text style={[styles.indexText, { color: themeColors.textSecondary }]}>{index + 1}</Text>
             <View style={styles.itemInfo}>
-                <Text style={styles.itemTitle} numberOfLines={1}>
+                <Text style={[styles.itemTitle, { color: themeColors.text }]} numberOfLines={1}>
                     {item.title || item.name}
                 </Text>
-                <Text style={styles.itemSubtitle} numberOfLines={1}>
+                <Text style={[styles.itemSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
                     {item.artist || 'Desconocido'} • {item.duration ? formatDuration(item.duration) : '--:--'}
                 </Text>
             </View>
             <TouchableOpacity
                 style={styles.moreButton}
                 onPress={() => handleRemoveItem(item.id)}>
-                <Text style={styles.moreIcon}>⋮</Text>
+                <Text style={[styles.moreIcon, { color: themeColors.textSecondary }]}>⋮</Text>
             </TouchableOpacity>
         </TouchableOpacity>
     );
@@ -97,14 +99,14 @@ const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlist, onBack, onIte
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+            <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <Text style={[styles.backIcon, { color: themeColors.text }]}>←</Text>
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.headerTitle}>{playlist.name}</Text>
-                    <Text style={styles.headerSubtitle}>{items.length} canciones</Text>
+                    <Text style={[styles.headerTitle, { color: themeColors.text }]}>{playlist.name}</Text>
+                    <Text style={[styles.headerSubtitle, { color: themeColors.textSecondary }]}>{items.length} canciones</Text>
                 </View>
             </View>
 
@@ -115,8 +117,8 @@ const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlist, onBack, onIte
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>Esta lista está vacía</Text>
-                        <Text style={styles.emptySubtext}>Agrega canciones desde el reproductor</Text>
+                        <Text style={[styles.emptyText, { color: themeColors.text }]}>Esta lista está vacía</Text>
+                        <Text style={[styles.emptySubtext, { color: themeColors.textSecondary }]}>Agrega canciones desde el reproductor</Text>
                     </View>
                 }
             />
@@ -127,14 +129,12 @@ const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlist, onBack, onIte
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0a0a0a',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#1a1a1a',
     },
     backButton: {
         padding: 8,
@@ -142,16 +142,13 @@ const styles = StyleSheet.create({
     },
     backIcon: {
         fontSize: 24,
-        color: '#ffffff',
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#ffffff',
     },
     headerSubtitle: {
         fontSize: 14,
-        color: '#888888',
     },
     listContent: {
         padding: 16,
@@ -161,12 +158,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
     },
     indexText: {
         width: 30,
         fontSize: 14,
-        color: '#888888',
         textAlign: 'center',
     },
     itemInfo: {
@@ -175,19 +170,16 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 16,
-        color: '#ffffff',
         marginBottom: 4,
     },
     itemSubtitle: {
         fontSize: 14,
-        color: '#888888',
     },
     moreButton: {
         padding: 8,
     },
     moreIcon: {
         fontSize: 20,
-        color: '#888888',
     },
     emptyContainer: {
         padding: 40,
@@ -195,12 +187,10 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 18,
-        color: '#ffffff',
         marginBottom: 8,
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#888888',
     },
 });
 

@@ -12,6 +12,7 @@ import {
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import MediaService from '../../services/MediaService';
+import { useSettings } from '../../context/SettingsContext';
 
 interface FolderListProps {
     mediaFiles?: {
@@ -28,6 +29,7 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
     const [paths, setPaths] = useState<string[]>([]);
     const [customPaths, setCustomPaths] = useState<string[]>([]);
     const [refreshing, setRefreshing] = useState<boolean>(false);
+    const { themeColors } = useSettings();
 
     useEffect(() => {
         loadPaths();
@@ -116,15 +118,15 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
         const isCustom = customPaths.includes(item);
 
         return (
-            <View style={styles.itemContainer}>
-                <View style={styles.iconContainer}>
+            <View style={[styles.itemContainer, { backgroundColor: themeColors.surfaceHighlight }]}>
+                <View style={[styles.iconContainer, { backgroundColor: themeColors.surface }]}>
                     <Text style={styles.folderIcon}>📁</Text>
                 </View>
                 <View style={styles.textContainer}>
-                    <Text style={styles.pathText} numberOfLines={1} ellipsizeMode="middle">
+                    <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1} ellipsizeMode="middle">
                         {item}
                     </Text>
-                    <Text style={styles.typeText}>
+                    <Text style={[styles.typeText, { color: themeColors.textSecondary }]}>
                         {isCustom ? 'Personalizada' : 'Sistema'}
                     </Text>
                 </View>
@@ -141,11 +143,11 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: themeColors.background }]}>
             <View style={styles.headerContainer}>
                 {/*<Text style={styles.title}>Carpetas de Medios</Text>*/}
                 <TouchableOpacity
-                    style={styles.addButton}
+                    style={[styles.addButton, { backgroundColor: themeColors.primary }]}
                     onPress={handleAddPath}
                     activeOpacity={0.8}>
                     <Text style={styles.addButtonText}>+ Añadir Carpeta</Text>
@@ -160,8 +162,8 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>📂</Text>
-                        <Text style={styles.emptyText}>No hay carpetas configuradas</Text>
-                        <Text style={styles.emptySubtext}>
+                        <Text style={[styles.emptyText, { color: themeColors.text }]}>No hay carpetas configuradas</Text>
+                        <Text style={[styles.emptySubtext, { color: themeColors.textSecondary }]}>
                             Añade carpetas personalizadas para escanear
                         </Text>
                     </View>
@@ -170,8 +172,8 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor="#1DB954"
-                        colors={['#1DB954']}
+                        tintColor={themeColors.primary}
+                        colors={[themeColors.primary]}
                     />
                 }
             />
@@ -182,7 +184,6 @@ const FolderList: React.FC<FolderListProps> = ({ onUpdate, refreshControl }) => 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0a0a0a',
         padding: 20,
     },
     headerContainer: {
@@ -197,7 +198,6 @@ const styles = StyleSheet.create({
         color: '#ffffff',
     },
     addButton: {
-        backgroundColor: '#1DB954',
         borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 8,
@@ -218,7 +218,6 @@ const styles = StyleSheet.create({
     itemContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1a1a1a',
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
@@ -227,7 +226,6 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
@@ -241,13 +239,11 @@ const styles = StyleSheet.create({
     },
     pathText: {
         fontSize: 14,
-        color: '#ffffff',
         fontWeight: '500',
         marginBottom: 4,
     },
     typeText: {
         fontSize: 12,
-        color: '#666666',
     },
     deleteButton: {
         padding: 8,
@@ -266,14 +262,12 @@ const styles = StyleSheet.create({
         opacity: 0.3,
     },
     emptyText: {
-        color: '#ffffff',
         textAlign: 'center',
         fontSize: 18,
         fontWeight: '600',
         marginBottom: 8,
     },
     emptySubtext: {
-        color: '#666666',
         textAlign: 'center',
         fontSize: 14,
     },
