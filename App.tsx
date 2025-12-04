@@ -5,7 +5,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TrackPlayer from 'react-native-track-player';
 
-import { HomeScreen, AudioPlayerScreen, VideoPlayerScreen, DatabaseDebugScreen, AboutScreen, TermsScreen } from './src/screens';
+import { 
+  HomeScreen, 
+  AudioPlayerScreen, 
+  VideoPlayerScreen,
+  DatabaseDebugScreen, 
+  AboutScreen, 
+  TermsScreen 
+} from './src/screens';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,10 +46,7 @@ export default function App() {
             animation: 'slide_from_right',
           }}
         >
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-          />
+          <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen
             name="AudioPlayer"
             component={AudioPlayerScreen}
@@ -58,20 +62,10 @@ export default function App() {
               presentation: 'fullScreenModal',
             }}
           />
-          <Stack.Screen
-            name="DatabaseDebug"
-            component={DatabaseDebugScreen}
-          />
-          <Stack.Screen
-            name="About"
-            component={AboutScreen}
-          />
-          <Stack.Screen
-            name="Terms"
-            component={TermsScreen}
-          />
+          <Stack.Screen name="DatabaseDebug" component={DatabaseDebugScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
+          <Stack.Screen name="Terms" component={TermsScreen} />
         </Stack.Navigator>
-
       </NavigationContainer>
     </SafeAreaProvider>
   );

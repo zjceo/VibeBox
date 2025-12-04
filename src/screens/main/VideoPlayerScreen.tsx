@@ -16,20 +16,27 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
+import { VideoPlayerScreenProps } from '../types';
+import type { MediaFile } from '../../types';
 
 const { width, height } = Dimensions.get('window');
 
-const VideoPlayerScreen = ({ route, navigation }) => {
+// Tipo para el ref del Video
+type VideoRef = {
+  seek: (time: number) => void;
+};
+
+const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ route, navigation }) => {
   const { video, playlist = [] } = route.params;
-  const videoRef = useRef(null);
-  const controlsTimeoutRef = useRef(null);
+  const videoRef = useRef<VideoRef>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const doubleTapTimeoutRef = useRef(null);
+  const doubleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const skipAnimLeft = useRef(new Animated.Value(0)).current;
   const skipAnimRight = useRef(new Animated.Value(0)).current;
 
-  const [currentVideo, setCurrentVideo] = useState(video);
-  const [currentIndex, setCurrentIndex] = useState(
+  const [currentVideo, setCurrentVideo] = useState<MediaFile>(video);
+  const [currentIndex, setCurrentIndex] = useState<number>(
     playlist.findIndex(v => v.id === video.id) || 0
   );
   const [paused, setPaused] = useState(false);
@@ -37,12 +44,12 @@ const VideoPlayerScreen = ({ route, navigation }) => {
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredPlaylist, setFilteredPlaylist] = useState(playlist);
+  const [filteredPlaylist, setFilteredPlaylist] = useState<MediaFile[]>(playlist);
   const [isBuffering, setIsBuffering] = useState(false);
 
   // Auto-ocultar controles
@@ -67,7 +74,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [showControls, paused, isSeeking, isBuffering]);
+  }, [showControls, paused, isSeeking, isBuffering, fadeAnim]);
 
   const resetControlsTimeout = () => {
     if (controlsTimeoutRef.current) {
@@ -81,7 +88,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     resetControlsTimeout();
   };
 
-  const handleSeek = (value) => {
+  const handleSeek = (value: number) => {
     if (videoRef.current) {
       videoRef.current.seek(value);
       setCurrentTime(value);
@@ -89,13 +96,13 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleProgress = (data) => {
+  const handleProgress = (data: { currentTime: number; playableDuration: number; seekableDuration: number }) => {
     if (!isSeeking) {
       setCurrentTime(data.currentTime);
     }
   };
 
-  const handleLoad = (data) => {
+  const handleLoad = (data: { duration: number }) => {
     setDuration(data.duration);
     setLoading(false);
     setError(null);
@@ -103,14 +110,14 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     setPaused(false);
   };
 
-  const handleError = (err) => {
+  const handleError = (err: any) => {
     console.error('Video error:', err);
-    setError(`Error al cargar el video`);
+    setError('Error al cargar el video');
     setLoading(false);
     setIsBuffering(false);
   };
 
-  const handleBuffer = (data) => {
+  const handleBuffer = (data: { isBuffering: boolean }) => {
     setIsBuffering(data.isBuffering);
     if (data.isBuffering) {
       setShowControls(true);
@@ -163,7 +170,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     }
   };
 
-  const selectVideo = (item, index) => {
+  const selectVideo = (item: MediaFile, index: number) => {
     setCurrentVideo(item);
     setCurrentIndex(index);
     setCurrentTime(0);
@@ -173,7 +180,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     setShowControls(true);
   };
 
-  const skipTime = (seconds) => {
+  const skipTime = (seconds: number) => {
     const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
     handleSeek(newTime);
 
@@ -194,7 +201,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     resetControlsTimeout();
   };
 
-  const handleDoubleTap = (side) => {
+  const handleDoubleTap = (side: 'left' | 'right') => {
     if (doubleTapTimeoutRef.current) {
       clearTimeout(doubleTapTimeoutRef.current);
       doubleTapTimeoutRef.current = null;
@@ -215,19 +222,19 @@ const VideoPlayerScreen = ({ route, navigation }) => {
     resetControlsTimeout();
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number): string => {
     if (isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getVideoName = (video) => {
-    if (!video) return 'Video sin nombre';
-    const name = video.filename || video.name || video.title;
+  const getVideoName = (videoItem: MediaFile): string => {
+    if (!videoItem) return 'Video sin nombre';
+    const name = videoItem.filename || videoItem.name || videoItem.title;
     if (name && name.trim()) return name;
-    if (video.path) {
-      const pathParts = video.path.split('/');
+    if (videoItem.path) {
+      const pathParts = videoItem.path.split('/');
       const fileName = pathParts[pathParts.length - 1];
       const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
       return nameWithoutExt || 'Video sin nombre';
@@ -378,7 +385,7 @@ const VideoPlayerScreen = ({ route, navigation }) => {
               </View>
             </View>
 
-            {/* Center Play Button - SIN FONDO */}
+            {/* Center Play Button */}
             <View style={styles.centerArea}>
               <TouchableOpacity
                 style={styles.playButton}
@@ -550,8 +557,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontWeight: '600',
   },
-
-  // TAP ZONES
   tapZonesContainer: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
@@ -586,14 +591,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '600',
   },
-
-  // CONTROLS
   controlsContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
-
-  // TOP BAR
   topBarContainer: {
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingTop: 12,
@@ -637,8 +638,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
-
-  // CENTER
   centerArea: {
     flex: 1,
     justifyContent: 'center',
@@ -658,8 +657,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: '#fff',
   },
-
-  // BOTTOM BAR
   bottomBarContainer: {
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingTop: 8,
@@ -702,8 +699,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
-
-  // ERROR
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -744,8 +739,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-
-  // MODAL
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.85)',
